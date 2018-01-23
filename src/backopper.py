@@ -1,4 +1,5 @@
-from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT
+from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION
+from .utils.utils import remove_old_backups, send_mail
 from requests import get, post
 from dotenv import load_dotenv
 import os
@@ -8,22 +9,27 @@ import arrow
 
 
 def backup(app):
-    env_file = '/srv/users/serverpilot/apps/{}/jenkins/shared'.format(app)
-    load_dotenv(env_file)
+    load_dotenv(ENV_FILE_LOCATION.format(app))
 
-    # ret = subprocess.call(
-    #     'mysqldump -u{} -p{} {} | gzip > /opt/backups/{}/{}.sql.gz'.format(
-    #         os.environ.get('DB_USER'),
-    #         os.environ.get('DB_PASS'),
-    #         os.environ.get('DB_NAME'),
-    #         app,
-    #         arrow.now('Europe/Amsterdam').format('YYYYMMDDHHmmss')
-    #     ),
-    #     shell=True)
-    ret = 0
+    backup_folder = BACKUPS_LOCATION.format(app)
+    remove_old_backups(backup_folder)
 
-    if ret != 0:
-        print('yo')
+    # attempt to run the mysqldump process and save the gzipped dump to the backups location
+    ret = subprocess.run(
+        'mysqldump -u{} -p{} {} | gzip > {}/{}.sql.gz'.format(
+            os.environ.get('DB_USER'),
+            os.environ.get('DB_PASS'),
+            os.environ.get('DB_NAME'),
+            backup_folder,
+            arrow.now('Europe/Amsterdam').format('YYYYMMDDHHmmss')
+        ),
+        shell=True, stderr=True)
+
+    # in case of error  (return code is different than 0),
+    # send an email alerting of this
+    # otherwise, post to gem that the backup has been done successfuly
+    if ret.returncode != 0:
+        send_mail(ret.stderr)
     else:
         response = post(API_POST_URL, json={
             'secret': '0xCAFEBABE',
@@ -31,7 +37,8 @@ def backup(app):
             'name': app
         })
 
-        print(response.text)
+        if response.status_code != 200:
+            send_mail(response.text)
 
 
 def cron():
