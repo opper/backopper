@@ -6,6 +6,8 @@ import os
 import click
 import subprocess
 import arrow
+from crontab import CronTab
+import getpass
 
 
 def backup(app):
@@ -44,21 +46,59 @@ def backup(app):
 def cron():
     response = get(API_GET_URL.format(ENVIRONMENT)).json()
 
-    for item in response.items():
-        name = item[0]
-        frequency = item[1]
+    # create cron object based on user's crontab
+    cron_obj = CronTab(user=getpass.getuser())
 
-        full_cron_command = '{} /bin/sh -c \'{}/venv/bin/backopper --action=backup --app={}\''
-        cron_frequency = ''
+    # iter(response) creates an iterable object based on, in this case, a json array
+    for item in iter(response):
+        name = item['name']
+        frequency = item['frequency']
+
+        cron_command = "/bin/sh -c '{}/venv/bin/backopper --action=backup --app={}'".format(os.getcwd(), name)
+        freq = ''
 
         if frequency == 'daily':
-            cron_frequency = '0 0 * * *'
+            freq = '@daily'
         elif frequency == 'weekly':
-            cron_frequency = '0 0 * * 0'
+            freq = '@weekly'
 
-        full_cron_command = full_cron_command.format(cron_frequency, os.getcwd(), name)
+        # magic to compare between old cron job for this app and the new one coming composed with whatever's coming
+        # from the API.
 
-        print(full_cron_command)
+        # the reason i chose to sorta compose a new cron job is because the lib i'm using, python-crontab, does not
+        # allow for easy comparison of jobs. so on each iteration of this loop, i compose a temporary cron command
+        # and compare it with whatever's in the crontab on this tag
+        temp_cron_command = '{} {} # {}'.format(freq, cron_command, name)
+
+        existing_job = list(cron_obj.find_comment(name))
+
+        # safe to assume that each tag (app) will have only one entry in the crontab
+        # since find_comment returns a generator (which is translated to a list), i select manually
+        # the first element in the list if the size is bigger than 0 (meaning if there's actually any elements)
+        if len(existing_job) != 0:
+            existing_job = existing_job[0]
+
+        # if existing job is different than the one coming from the API, then update it
+        # but first remove the existing rule
+        if str(existing_job) != temp_cron_command:
+
+            # this if exists only in the case when there's no rule set yet
+            # then existing_job would be an empty list and stuff will mess up
+            if len(existing_job) != 0:
+                cron_obj.remove(existing_job)
+
+            # creates a new cron and sets the frequency to whatever came from the API
+            job = cron_obj.new(command=cron_command, comment=name)
+
+            if frequency == 'daily':
+                job.setall(freq)
+            elif frequency == 'weekly':
+                job.setall(freq)
+
+            job.enable()
+
+    # write all the changes (if any at all)
+    cron_obj.write()
 
 
 @click.command()
