@@ -10,7 +10,8 @@ setup(
         'python-crontab',
         'requests',
         'python-dotenv',
-        'click'
+        'click',
+        'arrow'
     ],
     entry_points='''
         [console_scripts]
