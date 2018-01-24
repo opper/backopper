@@ -11,6 +11,7 @@ import getpass
 
 
 def backup(app):
+    # loads the .env file into memory to have access to the db credentials
     load_dotenv(ENV_FILE_LOCATION.format(app))
 
     backup_folder = BACKUPS_LOCATION.format(app)
