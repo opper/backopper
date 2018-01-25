@@ -55,7 +55,7 @@ def cron():
         name = item['name']
         frequency = item['frequency']
 
-        cron_command = "/bin/sh -c '{}/venv/bin/backopper --action=backup --app={}'".format(VENV_PATH, name)
+        cron_command = "/bin/sh -c '{}/bin/backopper --action=backup --app={}'".format(VENV_PATH, name)
         freq = ''
 
         if frequency == 'daily':
