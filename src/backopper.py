@@ -8,14 +8,21 @@ import subprocess
 import arrow
 from crontab import CronTab
 import getpass
+import logging
+import logging.config
 
 
 def backup(app):
     # loads the .env file into memory to have access to the db credentials
     load_dotenv(ENV_FILE_LOCATION.format(app))
 
+    logger = logging.getLogger(__name__)
+
     backup_folder = BACKUPS_LOCATION.format(app)
     remove_old_backups(backup_folder)
+
+    logger.info('#### Backup process for {} started ####'.format(app))
+    logger.info('Attempting to make database dump')
 
     # attempt to run the mysqldump process and save the gzipped dump to the backups location
     ret = subprocess.run(
@@ -32,8 +39,10 @@ def backup(app):
     # send an email alerting of this
     # otherwise, post to gem that the backup has been done successfuly
     if ret.returncode != 0:
+        logger.error('Dump failed. Reason: {}'.format(ret.stderr))
         send_mail(ret.stderr)
     else:
+        logger.info('Dump completed successfully')
         response = post(API_POST_URL, json={
             'secret': '0xCAFEBABE',
             'executed': arrow.now('Europe/Amsterdam').timestamp,
@@ -42,9 +51,13 @@ def backup(app):
 
         if response.status_code != 200:
             send_mail(response.text)
+    logger.info('#### Backup process for {} ended ####'.format(app))
 
 
 def cron():
+    logger = logging.getLogger(__name__)
+
+    logger.info('#### Cron started')
     response = get(API_GET_URL.format(ENVIRONMENT)).json()
 
     # create cron object based on user's crontab
@@ -79,6 +92,7 @@ def cron():
         if len(existing_job) != 0:
             existing_job = existing_job[0]
 
+        logger.info('Attempting to create cronjob for {}'.format(name))
         # if existing job is different than the one coming from the API, then update it
         # but first remove the existing rule
         if str(existing_job) != temp_cron_command:
@@ -96,16 +110,23 @@ def cron():
             elif frequency == 'weekly':
                 job.setall(freq)
 
+            logger.info('Created cronjob for {} with command: {}'.format(name, cron_command))
+
             job.enable()
+        else:
+            logger.info('Cron already exists for {}'.format(name))
 
     # write all the changes (if any at all)
     cron_obj.write()
+    logger.info('#### Cron ended')
 
 
 @click.command()
 @click.option('--action')
 @click.option('--app')
 def main(action, app):
+    logging.config.fileConfig('src/logging.conf')
+
     if action == 'backup':
         backup(app)
     elif action == 'cron':
