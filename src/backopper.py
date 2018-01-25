@@ -1,4 +1,4 @@
-from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION
+from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, VENV_PATH
 from .utils.utils import remove_old_backups, send_mail
 from requests import get, post
 from dotenv import load_dotenv
@@ -55,7 +55,7 @@ def cron():
         name = item['name']
         frequency = item['frequency']
 
-        cron_command = "/bin/sh -c '{}/venv/bin/backopper --action=backup --app={}'".format(os.getcwd(), name)
+        cron_command = "/bin/sh -c '{}/venv/bin/backopper --action=backup --app={}'".format(VENV_PATH, name)
         freq = ''
 
         if frequency == 'daily':
