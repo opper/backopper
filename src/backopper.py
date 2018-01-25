@@ -1,22 +1,24 @@
-from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, VENV_PATH
-from .utils.utils import remove_old_backups, send_mail
-from requests import get, post
-from dotenv import load_dotenv
 import os
+import logging.config
+import getpass
+
 import click
 import subprocess
 import arrow
+import requests
 from crontab import CronTab
-import getpass
-import logging
-import logging.config
+from dotenv import load_dotenv
+
+from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, VENV_PATH
+from .utils.utils import remove_old_backups, send_mail
+
+logging.config.fileConfig('src/logging.conf')
+logger = logging.getLogger(__name__)
 
 
 def backup(app):
     # loads the .env file into memory to have access to the db credentials
     load_dotenv(ENV_FILE_LOCATION.format(app))
-
-    logger = logging.getLogger(__name__)
 
     backup_folder = BACKUPS_LOCATION.format(app)
     remove_old_backups(backup_folder)
@@ -43,7 +45,7 @@ def backup(app):
         send_mail(ret.stderr)
     else:
         logger.info('Dump completed successfully')
-        response = post(API_POST_URL, json={
+        response = requests.post(API_POST_URL, json={
             'secret': '0xCAFEBABE',
             'executed': arrow.now('Europe/Amsterdam').timestamp,
             'name': app
@@ -55,26 +57,28 @@ def backup(app):
 
 
 def cron():
-    logger = logging.getLogger(__name__)
-
     logger.info('#### Cron started')
-    response = get(API_GET_URL.format(ENVIRONMENT)).json()
+    response = requests.get(API_GET_URL.format(ENVIRONMENT)).json()
 
     # create cron object based on user's crontab
     cron_obj = CronTab(user=getpass.getuser())
 
-    # iter(response) creates an iterable object based on, in this case, a json array
-    for item in iter(response):
+    for item in response:
         name = item['name']
         frequency = item['frequency']
+
+        allowed_frequencies = ['daily', 'weekly']
+
+        # in case there's bogus frequency coming from the api, silently skip the interation and move on
+        if frequency not in allowed_frequencies:
+            continue
 
         cron_command = "/bin/sh -c '{}/bin/backopper --action=backup --app={}'".format(VENV_PATH, name)
         freq = ''
 
-        if frequency == 'daily':
-            freq = '@daily'
-        elif frequency == 'weekly':
-            freq = '@weekly'
+        if frequency in allowed_frequencies:
+            # becomes something like "@daily" or "@yearly" or whatever
+            freq = '@{}'.format(frequency)
 
         # magic to compare between old cron job for this app and the new one coming composed with whatever's coming
         # from the API.
@@ -104,11 +108,7 @@ def cron():
 
             # creates a new cron and sets the frequency to whatever came from the API
             job = cron_obj.new(command=cron_command, comment=name)
-
-            if frequency == 'daily':
-                job.setall(freq)
-            elif frequency == 'weekly':
-                job.setall(freq)
+            job.setall(freq)
 
             logger.info('Created cronjob for {} with command: {}'.format(name, cron_command))
 
@@ -125,8 +125,6 @@ def cron():
 @click.option('--action')
 @click.option('--app')
 def main(action, app):
-    logging.config.fileConfig('src/logging.conf')
-
     if action == 'backup':
         backup(app)
     elif action == 'cron':

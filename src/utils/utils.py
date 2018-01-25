@@ -1,8 +1,9 @@
 from glob import glob
 from os.path import getmtime
 from os import unlink
-from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
 from email.mime.text import MIMEText
+
+from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
 from smtplib import SMTP
 
 
