@@ -6,7 +6,7 @@ set :repo_url, 'git@bitbucket.org:opper/backopper.git'
 
 set :branch, 'master'
 
-set :deploy_user, 'serverpilot'
+set :deploy_user, 'root'
 
 set :deploy_to, "/opt/backups/#{fetch(:application)}"
 
