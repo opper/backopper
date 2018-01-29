@@ -71,6 +71,7 @@ def cron():
 
         # in case there's bogus frequency coming from the api, silently skip the interation and move on
         if frequency not in allowed_frequencies:
+            logger.warning('Unallowed frequency came in from the API: {}, Might want to check this'.format(frequency))
             continue
 
         cron_command = "/bin/bash -c 'source {0}/bin/activate && {0}/bin/backopper --action=backup --app={1}'".format(VENV_PATH, name)
