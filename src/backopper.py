@@ -9,7 +9,7 @@ import requests
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, VENV_PATH
+from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, SRC_PATH
 from .utils.utils import remove_old_backups, send_mail
 
 logging.config.fileConfig('src/logging.conf')
@@ -74,7 +74,7 @@ def cron():
             logger.warning('Unallowed frequency came in from the API: {}, Might want to check this'.format(frequency))
             continue
 
-        cron_command = "/bin/bash -c 'source {0}/bin/activate && {0}/bin/backopper --action=backup --app={1}'".format(VENV_PATH, name)
+        cron_command = "/bin/bash -c '{0}/backup.sh {1}'".format(SRC_PATH, name)
         freq = ''
 
         if frequency in allowed_frequencies:
