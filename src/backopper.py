@@ -73,7 +73,7 @@ def cron():
         if frequency not in allowed_frequencies:
             continue
 
-        cron_command = "/bin/sh -c '{0}/bin/backopper --action=backup --app=$ {1}'".format(VENV_PATH, name)
+        cron_command = "/bin/sh -c '{0}/bin/backopper --action=backup --app={1}'".format(VENV_PATH, name)
         freq = ''
 
         if frequency in allowed_frequencies:
