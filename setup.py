@@ -1,8 +1,13 @@
 from setuptools import setup, find_packages
 
+__version__ = '1.0'
+
 setup(
     name='backopper',
-    version='1.0',
+    version=__version__,
+    url='https://back.opper.nl/',
+    platforms='any',
+    zip_safe=False,
     packages=find_packages(),
     include_package_data=True,
     py_modules=['backopper'],
@@ -20,3 +25,5 @@ setup(
     author='Alex Raileanu',
     author_email='alex@opper.nl',
 )
+
+
