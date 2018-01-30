@@ -1,6 +1,6 @@
 from glob import glob
-from os.path import getmtime
-from os import unlink
+from os.path import getmtime, isdir
+from os import unlink, makedirs
 from email.mime.text import MIMEText
 
 from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
@@ -36,3 +36,8 @@ def send_mail(error):
     s.login(MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD)
     s.sendmail(msg['From'], RECIPIENT_EMAILS, msg.as_string())
     s.quit()
+
+
+def create_backups_folder(folder):
+    if isdir(folder) is False:
+        makedirs(folder)

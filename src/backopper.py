@@ -10,7 +10,7 @@ from crontab import CronTab
 from dotenv import load_dotenv
 
 from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, SRC_PATH
-from .utils.utils import remove_old_backups, send_mail
+from .utils.utils import remove_old_backups, send_mail, create_backups_folder
 
 logging.config.fileConfig('src/logging.conf')
 logger = logging.getLogger(__name__)
@@ -21,6 +21,8 @@ def backup(app):
     load_dotenv(ENV_FILE_LOCATION.format(app))
 
     backup_folder = BACKUPS_LOCATION.format(app)
+
+    create_backups_folder(backup_folder)
     remove_old_backups(backup_folder)
 
     logger.info('#### Backup process for {} started ####'.format(app))
