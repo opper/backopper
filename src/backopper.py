@@ -162,7 +162,7 @@ def import_db(file_path):
         file_name = file_path.split('/')[-1]
         full_file_path = '{}/{}'.format(os.environ.get('HOME'), file_name)
 
-        ret = subprocess.run('zcat {} | {}'.format(full_file_path, import_command), shell=True)
+        ret = subprocess.run('gunzip < {} | {}'.format(full_file_path, import_command), shell=True)
 
         if ret.returncode != 0:
             click.secho('Error importing the db: {}'.format(ret.stderr), fg='red')
