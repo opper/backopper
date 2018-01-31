@@ -9,14 +9,24 @@ import requests
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, SRC_PATH
-from .utils.utils import remove_old_backups, send_mail, create_backups_folder
+from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, SRC_PATH, HOSTNAMES
+from .utils.utils import remove_old_backups, send_mail, create_backups_folder, get_latest_backup, download_backup_file
 
-logging.config.fileConfig('src/logging.conf')
-logger = logging.getLogger(__name__)
+logger = None
+
+
+def init_logger():
+    try:
+        logging.config.fileConfig('src/logging.conf')
+        logger = logging.getLogger(__name__)
+    except FileNotFoundError:
+        print('Log file not found')
+        exit(-1)
 
 
 def backup(app):
+    init_logger()
+
     # loads the .env file into memory to have access to the db credentials
     load_dotenv(ENV_FILE_LOCATION.format(app))
 
@@ -59,6 +69,8 @@ def backup(app):
 
 
 def cron():
+    init_logger()
+
     logger.info('#### Cron started')
     response = requests.get(API_GET_URL.format(ENVIRONMENT)).json()
 
@@ -124,11 +136,21 @@ def cron():
     logger.info('#### Cron ended')
 
 
+def download(app, environment):
+    command = 'ls -t {}/*.gz | head -1'.format(BACKUPS_LOCATION.format(app))
+    backup_file = get_latest_backup(command, HOSTNAMES[environment])
+
+    download_backup_file(backup_file, HOSTNAMES[environment])
+
+
 @click.command()
 @click.option('--action')
 @click.option('--app')
-def main(action, app):
+@click.option('--environment')
+def main(action, app, environment):
     if action == 'backup':
         backup(app)
     elif action == 'cron':
         cron()
+    elif action == 'download':
+        download(app, environment)

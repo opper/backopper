@@ -1,10 +1,14 @@
 from glob import glob
+import scp
+from scp import SCPException
 from os.path import getmtime, isdir
-from os import unlink, makedirs
+from os import unlink, makedirs, environ
 from email.mime.text import MIMEText
 
 from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
+from src.models.client import Client
 from smtplib import SMTP
+import sys
 
 
 def remove_old_backups(location):
@@ -41,3 +45,51 @@ def send_mail(error):
 def create_backups_folder(folder):
     if isdir(folder) is False:
         makedirs(folder)
+
+
+def get_latest_backup(command, host):
+    ssh_client = Client.get_instance(host)
+
+    (stdin, stdout, stderr) = ssh_client.exec_command(command)
+
+    output = stdout.readlines()
+    err = stderr.readlines()
+
+    if len(err) != 0:
+        for line in err:
+            print(line, end='')
+
+        exit(-2)
+
+    ssh_client.close()
+
+    if len(output) != 0:
+        output = output[0]
+
+    # stdout has an automagic newline character appended to it which is unnecessary
+    return output.replace('\n', '')
+
+
+def download_backup_file(file, host):
+    ssh_client = Client.get_instance(host)
+
+    # SCPCLient takes a paramiko transport as an argument
+    scp_client = scp.SCPClient(ssh_client.get_transport(), progress=progress)
+
+    try:
+        scp_client.get(file, environ.get('HOME'))
+    except SCPException as scpe:
+        print('Error fetching the file: {}'.format(scpe))
+
+        exit(-3)
+
+    scp_client.close()
+
+
+# Define progress callback that prints the current percentage completed for the file
+def progress(filename, size, sent):
+    perc = float(sent) / float(size) * 100
+    sys.stdout.write('progress: {:.2f}%\r'.format(perc))
+    if perc == 100:
+        print('')
+

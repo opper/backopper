@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '1.0'
+__version__ = '1.1'
 
 setup(
     name='backopper',
@@ -16,7 +16,8 @@ setup(
         'requests',
         'python-dotenv',
         'click',
-        'arrow'
+        'arrow',
+        'scp'
     ],
     entry_points='''
         [console_scripts]
@@ -25,5 +26,3 @@ setup(
     author='Alex Raileanu',
     author_email='alex@opper.nl',
 )
-
-
