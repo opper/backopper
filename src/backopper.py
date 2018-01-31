@@ -142,6 +142,34 @@ def download(app, environment):
 
     download_backup_file(backup_file, HOSTNAMES[environment])
 
+    import_db(backup_file)
+
+
+def import_db(file_path):
+    if click.confirm('Do you want to import the dump into your database?'):
+        database = click.prompt('Enter database name')
+        user = click.prompt('Enter username')
+        password = click.prompt('Enter password', default='')
+        host = click.prompt('Enter host', default='localhost')
+
+        if host != 'localhost':
+            import_command = 'mysql --user="{}" --password="{}" --host="{}" {}'.format(user, password, host, database)
+        else:
+            import_command = 'mysql --user="{}" --password="{}" {}'.format(user, password, database)
+
+        # grab the file name from the file path
+        # i.e. split the path by / and grab the last element
+        file_name = file_path.split('/')[-1]
+        full_file_path = '{}/{}'.format(os.environ.get('HOME'), file_name)
+
+        ret = subprocess.run('zcat {} | {}'.format(full_file_path, import_command), shell=True)
+
+        if ret.returncode != 0:
+            click.secho('Error importing the db: {}'.format(ret.stderr), fg='red')
+        else:
+            click.secho('New dump imported successfully', fg='green')
+            os.unlink(full_file_path)
+
 
 @click.command()
 @click.option('--action')
