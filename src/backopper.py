@@ -29,7 +29,7 @@ def backup(app):
 
     # attempt to run the mysqldump process and save the gzipped dump to the backups location
     ret = subprocess.run(
-        'mysqldump -u{} -p{} {} | gzip > {}/{}.sql.gz'.format(
+        'mysqldump --user="{}" --password="{}" {} | gzip > {}/{}.sql.gz'.format(
             os.environ.get('DB_USERNAME'),
             os.environ.get('DB_PASSWORD'),
             os.environ.get('DB_DATABASE'),
