@@ -19,3 +19,9 @@ it cleans up the backups folder so that only the last 5 backups are kept. After 
 backup based on those credentials and save a gzipped file into the backups directory. If this fails, it sends an email 
 alerting of the failure. If everything went well, it will post to gem with the name of the app and the time the backup 
 has been executed.
+
+
+### todo:
+
+- figure out a way to download dumps other than root@host
+- figure out a place to install the utility 'globally'

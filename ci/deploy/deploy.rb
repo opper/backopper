@@ -6,10 +6,12 @@ set :repo_url, 'git@bitbucket.org:opper/backopper.git'
 
 set :branch, 'master'
 
-set :deploy_user, 'root'
-
-set :deploy_to, "/opt/backups/#{fetch(:application)}"
-
 append :linked_files, "src/secrets/__init__.py"
+
+set :deploy_to, '/opt/backopper'
+
+set :dist_path, '/var/www/html/pip/backopper'
+
+set :deploy_user, 'root'
 
 after "deploy:finished", "dependencies:install"

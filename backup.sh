@@ -1,5 +1,5 @@
 #! /bin/bash
-cd /opt/backups/backopper/current
+cd $2
 source venv/bin/activate
 
 backopper --action=backup --app=$1

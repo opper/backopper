@@ -77,7 +77,7 @@ def cron():
             logger.warning('Unallowed frequency came in from the API: {}, Might want to check this'.format(frequency))
             continue
 
-        cron_command = "/bin/bash -c '{0}/backup.sh {1}'".format(SRC_PATH, name)
+        cron_command = "/bin/bash -c '{0}/backup.sh {1} {0}'".format(SRC_PATH, name)
         freq = ''
 
         if frequency in allowed_frequencies:

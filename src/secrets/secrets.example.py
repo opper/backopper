@@ -7,4 +7,9 @@ MAILGUN_SMTP_URL = 'smtp.mailgun.org'
 RECIPIENT_EMAILS = ['']
 BACKUPS_LOCATION = '/opt/backups/{}'
 ENV_FILE_LOCATION = '/srv/users/serverpilot/apps/{}/jenkins/shared/.env'
-VENV_PATH = ''
+SRC_PATH = '/opt/backups/backopper/current'
+HOSTNAMES = {
+    'staging': '',
+    'acceptance': '',
+    'live': ''
+}

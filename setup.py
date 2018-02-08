@@ -1,11 +1,10 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-__version__ = '1.2'
+__version__ = '1.3'
 
 setup(
     name='backopper',
     version=__version__,
-    url='https://back.opper.nl/',
     platforms='any',
     zip_safe=False,
     packages=find_packages(),
