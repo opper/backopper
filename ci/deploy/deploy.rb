@@ -6,8 +6,6 @@ set :repo_url, 'git@bitbucket.org:opper/backopper.git'
 
 set :branch, 'master'
 
-append :linked_files, "src/secrets/__init__.py"
-
 set :deploy_to, '/opt/backopper'
 
 set :dist_path, '/var/www/html/pip/backopper'
