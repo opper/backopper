@@ -8,6 +8,8 @@ set :branch, 'master'
 
 set :deploy_to, '/opt/backopper'
 
+set :tmp_dir, "/home/deploy/tmp"
+
 set :dist_path, '/var/www/html/pip/backopper'
 
 set :deploy_user, 'deploy'
