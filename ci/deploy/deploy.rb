@@ -10,6 +10,6 @@ set :deploy_to, '/opt/backopper'
 
 set :dist_path, '/var/www/html/pip/backopper'
 
-set :deploy_user, 'root'
+set :deploy_user, 'deploy'
 
 after "deploy:finished", "dependencies:install"
