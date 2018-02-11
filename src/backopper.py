@@ -9,8 +9,6 @@ import requests
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .secrets.secrets import API_GET_URL, API_POST_URL, BACKUPS_LOCATION, ENVIRONMENT, ENV_FILE_LOCATION, HOSTNAMES, \
-    SRC_PATH
 from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, remove_old_backups, send_mail
 
 
@@ -19,9 +17,9 @@ def backup(app):
     logger = logging.getLogger(__name__)
 
     # loads the .env file into memory to have access to the db credentials
-    load_dotenv(ENV_FILE_LOCATION.format(app))
+    load_dotenv(os.environ.get('ENV_FILE_LOCATION').format(app))
 
-    backup_folder = BACKUPS_LOCATION.format(app)
+    backup_folder = os.environ.get('BACKUPS_LOCATION').format(app)
 
     create_backups_folder(backup_folder)
     remove_old_backups(backup_folder)
@@ -48,7 +46,7 @@ def backup(app):
         send_mail(ret.stderr)
     else:
         logger.info('Dump completed successfully')
-        response = requests.post(API_POST_URL, json={
+        response = requests.post(os.environ.get('API_POST_URL'), json={
             'secret': '0xCAFEBABE',
             'executed': arrow.now('Europe/Amsterdam').timestamp,
             'name': app
@@ -56,7 +54,7 @@ def backup(app):
 
         if response.status_code != 200:
             send_mail(response.text)
-    logger.info('#### Backup process for {} ended ####'.format(app))
+        logger.info('#### Backup process for {} ended ####'.format(app))
 
 
 def cron():
@@ -64,7 +62,7 @@ def cron():
     logger = logging.getLogger(__name__)
 
     logger.info('#### Cron started')
-    response = requests.get(API_GET_URL.format(ENVIRONMENT)).json()
+    response = requests.get(os.environ.get('API_GET_URL').format(os.environ.get('ENVIRONMENT'))).json()
 
     # create cron object based on user's crontab
     cron_obj = CronTab(user=getpass.getuser())
@@ -80,7 +78,7 @@ def cron():
             logger.warning('Unallowed frequency came in from the API: {}, Might want to check this'.format(frequency))
             continue
 
-        cron_command = "/bin/bash -c '{0}/backup.sh {1} {0}'".format(SRC_PATH, name)
+        cron_command = "/bin/bash -c '{0}/backup.sh {1} {0}'".format(os.environ.get('SRC_PATH'), name)
         freq = ''
 
         if frequency in allowed_frequencies:
@@ -129,10 +127,10 @@ def cron():
 
 
 def download(app, environment):
-    command = 'ls -t {}/*.gz | head -1'.format(BACKUPS_LOCATION.format(app))
-    backup_file = get_latest_backup(command, HOSTNAMES[environment])
+    command = 'ls -t {}/*.gz | head -1'.format(os.environ.get('BACKUPS_LOCATION').format(app))
+    backup_file = get_latest_backup(command, os.environ.get(environment.upper()))
 
-    download_backup_file(backup_file, HOSTNAMES[environment])
+    download_backup_file(backup_file, os.environ.get(environment.upper()))
 
     if click.confirm('Do you want to import the dump into your database?'):
         import_db(backup_file)
@@ -168,6 +166,8 @@ def import_db(file_path):
 @click.option('--app')
 @click.option('--environment')
 def main(action, app, environment):
+    load_dotenv('.env')
+
     if action == 'backup':
         backup(app)
     elif action == 'cron':

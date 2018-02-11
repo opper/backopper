@@ -9,7 +9,9 @@ import scp
 from scp import SCPException
 
 from src.models.client import Client
-from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
+
+
+# from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
 
 
 def remove_old_backups(location):
@@ -34,12 +36,12 @@ def send_mail(error):
 
     msg['Subject'] = 'Backup failed'
     msg['From'] = 'Backup process <t@opper.nl>'
-    msg['To'] = ','.join(RECIPIENT_EMAILS)
+    msg['To'] = environ.get('RECIPIENT_EMAILS')
 
-    s = SMTP(MAILGUN_SMTP_URL, 587)
+    s = SMTP(environ.get('MAILGUN_SMTP_URL'), 587)
 
-    s.login(MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD)
-    s.sendmail(msg['From'], RECIPIENT_EMAILS, msg.as_string())
+    s.login(environ.get('MAILGUN_SMTP_LOGIN'), environ.get('MAILGUN_SMTP_PASSWORD'))
+    s.sendmail(msg['From'], environ.get('RECIPIENT_EMAILS'), msg.as_string())
     s.quit()
 
 
