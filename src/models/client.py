@@ -17,10 +17,13 @@ class Client(object):
     client = None
 
     @classmethod
-    def get_instance(cls, host):
+    def get_instance(cls, host, port=None):
+        if port is None:
+            port = 222  # default ssh port for us
+
         client = paramiko.SSHClient()
         client.load_system_host_keys()
-        client.connect(hostname=host, port=25642, username='root')
+        client.connect(hostname=host, port=port, username='root')
         cls.client = client
 
         return client

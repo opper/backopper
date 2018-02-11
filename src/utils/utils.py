@@ -60,9 +60,8 @@ def get_latest_backup(command, host):
         for line in err:
             print(line, end='')
 
+        ssh_client.close()
         exit(-2)
-
-    ssh_client.close()
 
     if len(output) != 0:
         output = output[0]
