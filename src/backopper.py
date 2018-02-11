@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from .secrets import API_GET_URL, API_POST_URL, BACKUPS_LOCATION, ENVIRONMENT, ENV_FILE_LOCATION, HOSTNAMES, SRC_PATH
 from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, remove_old_backups, send_mail
- 
+
 
 def backup(app):
     logging.config.fileConfig('src/logging.conf')
