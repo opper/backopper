@@ -1,14 +1,15 @@
+import sys
+from email.mime.text import MIMEText
 from glob import glob
+from os import environ, makedirs, unlink
+from os.path import getmtime, isdir
+from smtplib import SMTP
+
 import scp
 from scp import SCPException
-from os.path import getmtime, isdir
-from os import unlink, makedirs, environ
-from email.mime.text import MIMEText
 
-from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
 from src.models.client import Client
-from smtplib import SMTP
-import sys
+from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
 
 
 def remove_old_backups(location):
@@ -17,7 +18,7 @@ def remove_old_backups(location):
     files = glob('{}/*'.format(location))
     files.sort(key=getmtime)
 
-    to_be_deleted = files[5::]
+    to_be_deleted = files[:-5:]
 
     for file in to_be_deleted:
         try:
@@ -92,4 +93,3 @@ def progress(filename, size, sent):
     sys.stdout.write('progress: {:.2f}%\r'.format(perc))
     if perc == 100:
         print('')
-

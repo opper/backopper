@@ -1,16 +1,16 @@
-import os
-import logging.config
 import getpass
-
-import click
+import logging.config
+import os
 import subprocess
+
 import arrow
+import click
 import requests
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .secrets import API_GET_URL, API_POST_URL, ENVIRONMENT, BACKUPS_LOCATION, ENV_FILE_LOCATION, SRC_PATH, HOSTNAMES
-from .utils.utils import remove_old_backups, send_mail, create_backups_folder, get_latest_backup, download_backup_file
+from .secrets import API_GET_URL, API_POST_URL, BACKUPS_LOCATION, ENVIRONMENT, ENV_FILE_LOCATION, HOSTNAMES, SRC_PATH
+from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, remove_old_backups, send_mail
 
 
 def backup(app):
