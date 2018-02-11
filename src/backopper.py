@@ -14,6 +14,7 @@ from .utils.utils import create_backups_folder, download_backup_file, get_latest
 
 
 def backup(app):
+    logging.config.fileConfig('src/logging.conf')
     logger = logging.getLogger(__name__)
 
     # loads the .env file into memory to have access to the db credentials
@@ -58,6 +59,7 @@ def backup(app):
 
 
 def cron():
+    logging.config.fileConfig('src/logging.conf')
     logger = logging.getLogger(__name__)
 
     logger.info('#### Cron started')
@@ -165,8 +167,6 @@ def import_db(file_path):
 @click.option('--app')
 @click.option('--environment')
 def main(action, app, environment):
-    logging.config.fileConfig('src/logging.conf')
-
     if action == 'backup':
         backup(app)
     elif action == 'cron':
