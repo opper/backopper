@@ -11,9 +11,6 @@ from scp import SCPException
 from src.models.client import Client
 
 
-# from src.secrets import MAILGUN_SMTP_LOGIN, MAILGUN_SMTP_PASSWORD, MAILGUN_SMTP_URL, RECIPIENT_EMAILS
-
-
 def remove_old_backups(location):
     # fetch all files from this location
     # and sort them by their creation date

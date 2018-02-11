@@ -52,7 +52,7 @@ def backup(app):
             'name': app
         })
 
-        if response.status_code != 200:
+        if response.status_code != 200 and response.status_code != 404:
             send_mail(response.text)
         logger.info('#### Backup process for {} ended ####'.format(app))
 
@@ -127,7 +127,12 @@ def cron():
 
 
 def download(app, environment):
+    # command to sort the dumps by timestamp and fetch only the first one (aka the most recent one)
     command = 'ls -t {}/*.gz | head -1'.format(os.environ.get('BACKUPS_LOCATION').format(app))
+
+    # os.environ.get(environment.upper()) i do this because i pass directly the environment from the option
+    # to get the value of the env with that name. if the key (aka environment) does not exist, click will complain and
+    # it will not let the app thru, so no need to add error handling here.
     backup_file = get_latest_backup(command, os.environ.get(environment.upper()))
 
     download_backup_file(backup_file, os.environ.get(environment.upper()))
@@ -164,7 +169,7 @@ def import_db(file_path):
 @click.command()
 @click.option('--action')
 @click.option('--app')
-@click.option('--environment')
+@click.option('--environment', type=click.Choice(['staging', 'acceptance', 'live']))
 def main(action, app, environment):
     load_dotenv('.env')
 
