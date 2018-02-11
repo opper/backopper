@@ -9,7 +9,8 @@ import requests
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .secrets import API_GET_URL, API_POST_URL, BACKUPS_LOCATION, ENVIRONMENT, ENV_FILE_LOCATION, HOSTNAMES, SRC_PATH
+from .secrets.secrets import API_GET_URL, API_POST_URL, BACKUPS_LOCATION, ENVIRONMENT, ENV_FILE_LOCATION, HOSTNAMES, \
+    SRC_PATH
 from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, remove_old_backups, send_mail
 
 

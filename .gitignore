@@ -108,5 +108,5 @@ venv.bak/
 
 # End of https://www.gitignore.io/api/python
 
-src/secrets/__init__.py
+src/secrets/secrets.py
 .idea
