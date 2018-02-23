@@ -1,5 +1,5 @@
 #! /bin/bash
-cd $2
+cd $1
 source venv/bin/activate
 
 backopper --action=cron
