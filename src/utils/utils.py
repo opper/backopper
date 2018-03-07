@@ -1,4 +1,5 @@
 import sys
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from glob import glob
 from os import environ, makedirs, unlink
@@ -29,16 +30,19 @@ def remove_old_backups(location):
 
 
 def send_mail(error):
-    msg = MIMEText(error)
+    msg = MIMEMultipart('alternative')
 
     msg['Subject'] = 'Backup failed'
     msg['From'] = 'Backup process <t@opper.nl>'
     msg['To'] = environ.get('RECIPIENT_EMAILS')
 
+    msg.attach(MIMEText(error, 'html'))
+
     s = SMTP(environ.get('MAILGUN_SMTP_URL'), 587)
 
     s.login(environ.get('MAILGUN_SMTP_LOGIN'), environ.get('MAILGUN_SMTP_PASSWORD'))
     s.sendmail(msg['From'], environ.get('RECIPIENT_EMAILS'), msg.as_string())
+
     s.quit()
 
 
