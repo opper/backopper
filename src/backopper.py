@@ -11,6 +11,14 @@ from dotenv import load_dotenv
 
 from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, remove_old_backups, send_mail
 
+SERVERS = {
+    'staging': '192.81.221.208',
+    'acceptance': '188.166.13.154',
+    'live': '188.166.77.230',
+}
+
+BACKUPS_LOCATION = '/opt/backups/{}'
+
 
 def backup(app):
     logging.config.fileConfig('src/logging.conf')
@@ -19,7 +27,7 @@ def backup(app):
     # loads the .env file into memory to have access to the db credentials
     load_dotenv(os.environ.get('ENV_FILE_LOCATION').format(app))
 
-    backup_folder = os.environ.get('BACKUPS_LOCATION').format(app)
+    backup_folder = BACKUPS_LOCATION.format(app)
 
     create_backups_folder(backup_folder)
     remove_old_backups(backup_folder)
@@ -128,14 +136,11 @@ def cron():
 
 def download(app, environment):
     # command to sort the dumps by timestamp and fetch only the first one (aka the most recent one)
-    command = 'ls -t {}/*.gz | head -1'.format(os.environ.get('BACKUPS_LOCATION').format(app))
+    command = 'ls -t {}/*.gz | head -1'.format(BACKUPS_LOCATION.format(app))
 
-    # os.environ.get(environment.upper()) i do this because i pass directly the environment from the option
-    # to get the value of the env with that name. if the key (aka environment) does not exist, click will complain and
-    # it will not let the app thru, so no need to add error handling here.
-    backup_file = get_latest_backup(command, os.environ.get(environment.upper()))
+    backup_file = get_latest_backup(command, SERVERS[environment])
 
-    download_backup_file(backup_file, os.environ.get(environment.upper()))
+    download_backup_file(backup_file, SERVERS[environment])
 
     if click.confirm('Do you want to import the dump into your database?'):
         import_db(backup_file)
