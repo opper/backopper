@@ -1,3 +1,5 @@
+import os
+
 import paramiko
 
 
@@ -22,8 +24,8 @@ class Client(object):
             port = 222  # default ssh port for us
 
         client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.connect(hostname=host, port=port, username='root')
+        client.load_system_host_keys('{}/.ssh/known_hosts'.format(os.environ.get('HOME')))
+        client.connect(hostname=host, port=port, username='serverpilot')
         cls.client = client
 
         return client
