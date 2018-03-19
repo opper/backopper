@@ -25,6 +25,7 @@ class Client(object):
 
         client = paramiko.SSHClient()
         client.load_system_host_keys('{}/.ssh/known_hosts'.format(os.environ.get('HOME')))
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(hostname=host, port=port, username='serverpilot')
         cls.client = client
 
