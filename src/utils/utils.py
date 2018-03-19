@@ -54,6 +54,7 @@ def create_backups_folder(folder):
 def get_latest_backup(command, host):
     ssh_client = Client.get_instance(host)
 
+    ssh_client.load_system_host_keys()
     (stdin, stdout, stderr) = ssh_client.exec_command(command)
 
     output = stdout.readlines()
