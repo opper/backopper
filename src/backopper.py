@@ -152,6 +152,12 @@ def import_db(file_path):
     password = click.prompt('Enter password', default='')
     host = click.prompt('Enter host', default='localhost')
 
+    replace = click.confirm('Do you want to replace something in the dump file?')
+
+    if replace:
+        old_needle = click.prompt('Enter string to search')
+        new_needle = click.prompt('Enter string to replace')
+
     if host != 'localhost':
         import_command = 'mysql --user="{}" --password="{}" --host="{}" {}'.format(user, password, host, database)
     else:
@@ -162,7 +168,17 @@ def import_db(file_path):
     file_name = file_path.split('/')[-1]
     full_file_path = '{}/{}'.format(os.environ.get('HOME'), file_name)
 
-    ret = subprocess.run('gunzip < {} | {}'.format(full_file_path, import_command), shell=True)
+    if replace:
+        ret = subprocess.run(
+            'gunzip < {} | sed -e "s#{}#{}#g" | {}'.format(
+                full_file_path,
+                old_needle,
+                new_needle,
+                import_command
+            ),
+            shell=True)
+    else:
+        ret = subprocess.run('gunzip < {} | {}'.format(full_file_path, import_command), shell=True)
 
     if ret.returncode != 0:
         click.secho('Error importing the db: {}'.format(ret.stderr), fg='red')
