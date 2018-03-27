@@ -29,10 +29,10 @@ def remove_old_backups(location):
     return True
 
 
-def send_mail(error):
+def send_mail(subj, error):
     msg = MIMEMultipart('alternative')
 
-    msg['Subject'] = 'Backup failed'
+    msg['Subject'] = 'Backup failed - {}'.format(subj)
     msg['From'] = 'Backup process <t@opper.nl>'
     msg['To'] = environ.get('RECIPIENT_EMAILS')
 

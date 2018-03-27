@@ -1,6 +1,8 @@
 import getpass
+import json
 import logging.config
 import os
+import socket
 import subprocess
 
 import arrow
@@ -51,9 +53,10 @@ def backup(app):
     # otherwise, post to gem that the backup has been done successfuly
     if ret.returncode != 0:
         logger.error('Dump failed. Reason: {}'.format(ret.stderr))
-        send_mail(ret.stderr)
+        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), ret.stderr)
     else:
         logger.info('Dump completed successfully')
+
         response = requests.post(os.environ.get('API_POST_URL'), json={
             'secret': '0xCAFEBABE',
             'executed': arrow.now('Europe/Amsterdam').timestamp,
@@ -61,7 +64,8 @@ def backup(app):
         })
 
         if response.status_code != 200 and response.status_code != 404:
-            send_mail(response.text)
+            send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
+
         logger.info('#### Backup process for {} ended ####'.format(app))
 
 
