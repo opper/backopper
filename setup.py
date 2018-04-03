@@ -1,11 +1,11 @@
 from setuptools import find_packages, setup
 
-__version__ = '1.8.1'
+__version__ = '1.8.2'
 
 setup(
     name='backopper',
     version=__version__,
-    platforms='any',
+    platforms=['any'],
     zip_safe=False,
     packages=find_packages(),
     include_package_data=True,
