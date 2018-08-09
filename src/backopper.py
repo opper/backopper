@@ -1,13 +1,12 @@
+import arrow
+import click
 import getpass
 import json
 import logging.config
 import os
+import requests
 import socket
 import subprocess
-
-import arrow
-import click
-import requests
 from crontab import CronTab
 from dotenv import load_dotenv
 
@@ -50,21 +49,29 @@ def backup(app):
 
     # in case of error  (return code is different than 0),
     # send an email alerting of this
-    # otherwise, post to gem that the backup has been done successfuly
+    # otherwise, post to cloud-admin that the backup has been done successfuly
     if ret.returncode != 0:
         logger.error('Dump failed. Reason: {}'.format(ret.stderr))
         send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), ret.stderr)
     else:
         logger.info('Dump completed successfully')
 
-        response = requests.post(os.environ.get('API_POST_URL'), json={
-            'secret': '0xCAFEBABE',
-            'executed': arrow.now('Europe/Amsterdam').timestamp,
-            'name': app
-        })
+    project = requests.get('{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
+                           headers={
+                               'X-Secret-Key': os.environ.get('SECRET_KEY')
+                           }).json()
 
-        if response.status_code != 200 and response.status_code != 404:
-            send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
+    response = requests.post(os.environ.get('API_POST_URL').format(project.id),
+                             headers={
+                                 'X-Secret-Key': os.environ.get('SECRET_KEY')
+                             },
+                             json={
+                                 'exec_time': arrow.now('Europe/Amsterdam').now,
+                                 'status': 'success' if ret.returncode == 0 else 'failure',
+                             })
+
+    if response.status_code != 200 and response.status_code != 404:
+        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
 
         logger.info('#### Backup process for {} ended ####'.format(app))
 
@@ -74,7 +81,9 @@ def cron():
     logger = logging.getLogger(__name__)
 
     logger.info('#### Cron started')
-    response = requests.get(os.environ.get('API_GET_URL').format(os.environ.get('ENVIRONMENT'))).json()
+    response = requests.get(os.environ.get('API_GET_URL').format(os.environ.get('ENVIRONMENT')), headers={
+        'X-Secret-Key': os.environ.get('SECRET_KEY')
+    }).json()
 
     # create cron object based on user's crontab
     cron_obj = CronTab(user=getpass.getuser())
