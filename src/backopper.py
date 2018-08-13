@@ -61,7 +61,7 @@ def backup(app):
                                'X-Secret-Key': os.environ.get('SECRET_KEY')
                            }).json()
 
-    response = requests.post(os.environ.get('API_POST_URL').format(project.id),
+    response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
                              headers={
                                  'X-Secret-Key': os.environ.get('SECRET_KEY')
                              },
