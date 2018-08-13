@@ -16,7 +16,8 @@ setup(
         'python-dotenv',
         'click',
         'arrow',
-        'scp'
+        'scp',
+        'boto3',
     ],
     entry_points='''
         [console_scripts]
