@@ -61,7 +61,7 @@ def backup(app):
     project = requests.get('{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
                            headers={
                                'X-Secret-Key': os.environ.get('SECRET_KEY')
-                           }, verify=False).json()
+                           }).json()
     s3_synced = False
     if ret.returncode == 0:
         s3_synced = post_to_s3('{}/{}.sql.gz'.format(backup_folder, datetime_now), app, datetime_now)
@@ -74,7 +74,7 @@ def backup(app):
                                  'exec_time': arrow.now('Europe/Amsterdam').timestamp,
                                  'status': 'success' if ret.returncode == 0 else 'failure',
                                  's3_synced': s3_synced,
-                             }, verify=False)
+                             })
 
     if response.status_code != 200 and response.status_code != 201 and response.status_code != 404:
         send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
