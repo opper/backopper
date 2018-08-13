@@ -70,7 +70,7 @@ def backup(app):
                                  'status': 'success' if ret.returncode == 0 else 'failure',
                              })
 
-    if response.status_code != 200 and response.status_code != 404:
+    if response.status_code != 200 and response.status_code != 201 and response.status_code != 404:
         send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
 
         logger.info('#### Backup process for {} ended ####'.format(app))
