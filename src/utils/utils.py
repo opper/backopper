@@ -11,6 +11,7 @@ from os import environ, makedirs, unlink
 from os.path import getmtime, isdir
 from scp import SCPException
 from smtplib import SMTP
+import logging
 
 from src.models.client import Client
 
@@ -102,6 +103,9 @@ def progress(filename, size, sent):
 
 
 def post_to_s3(path_to_dump, app_name, datetime):
+    # disable debug stuff being uploaded to s3
+    logging.getLogger('boto3').setLevel(logging.WARNING)
+    
     s3 = boto3.client(
         's3',
         aws_access_key_id=os.environ.get('AWS_SECRET_KEY_ID'),
