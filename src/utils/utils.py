@@ -1,13 +1,16 @@
 import sys
+
+import boto3
+import os
+import scp
+from boto3.exceptions import S3UploadFailedError
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from glob import glob
 from os import environ, makedirs, unlink
 from os.path import getmtime, isdir
-from smtplib import SMTP
-
-import scp
 from scp import SCPException
+from smtplib import SMTP
 
 from src.models.client import Client
 
@@ -96,3 +99,36 @@ def progress(filename, size, sent):
     sys.stdout.write('progress: {:.2f}%\r'.format(perc))
     if perc == 100:
         print('')
+
+
+def post_to_s3(path_to_dump, app_name, datetime):
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=os.environ.get('AWS_SECRET_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+    )
+    response = s3.list_buckets()
+
+    buckets = [bucket['Name'] for bucket in response['Buckets']]
+    backups_bucket = None
+
+    for bucket in buckets:
+        if bucket == os.environ.get('AWS_BUCKET_NAME'):
+            backups_bucket = bucket
+
+    if backups_bucket is None:
+        print('Could not find bucket to upload dump to. Available buckets: {}'.format(buckets))
+
+        exit(-4)
+
+    # file name = $project_name/$environment/backup_$datetime.gz
+    file_name = '{}/{}/backup_{}.gz'.format(app_name, os.environ.get('ENVIRONMENT'), datetime)
+
+    try:
+        s3.upload_file(path_to_dump, backups_bucket, file_name)
+    except S3UploadFailedError as e:
+        send_mail('Error syncing to s3', str(e))
+
+        return False
+
+    return True

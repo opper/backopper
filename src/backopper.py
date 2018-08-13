@@ -10,7 +10,8 @@ import subprocess
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, remove_old_backups, send_mail
+from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, post_to_s3, remove_old_backups, \
+    send_mail
 
 SERVERS = {
     'staging': '192.81.221.208',
@@ -28,7 +29,7 @@ def backup(app):
     # loads the .env file into memory to have access to the db credentials
     load_dotenv(os.environ.get('ENV_FILE_LOCATION').format(app))
 
-    backup_folder = BACKUPS_LOCATION.format(app)
+    backup_folder = '/tmp'
 
     create_backups_folder(backup_folder)
     remove_old_backups(backup_folder)
@@ -37,13 +38,14 @@ def backup(app):
     logger.info('Attempting to make database dump')
 
     # attempt to run the mysqldump process and save the gzipped dump to the backups location
+    datetime_now = arrow.now('Europe/Amsterdam').format('YYYYMMDDHHmmss')
     ret = subprocess.run(
         'mysqldump --user="{}" --password="{}" {} | gzip > {}/{}.sql.gz'.format(
             os.environ.get('DB_USERNAME'),
             os.environ.get('DB_PASSWORD'),
             os.environ.get('DB_DATABASE'),
             backup_folder,
-            arrow.now('Europe/Amsterdam').format('YYYYMMDDHHmmss')
+            datetime_now
         ),
         shell=True, stderr=True)
 
@@ -59,7 +61,10 @@ def backup(app):
     project = requests.get('{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
                            headers={
                                'X-Secret-Key': os.environ.get('SECRET_KEY')
-                           }).json()
+                           }, verify=False).json()
+    s3_synced = False
+    if ret.returncode == 0:
+        s3_synced = post_to_s3('{}/{}.sql.gz'.format(backup_folder, datetime_now), app, datetime_now)
 
     response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
                              headers={
@@ -68,12 +73,13 @@ def backup(app):
                              json={
                                  'exec_time': arrow.now('Europe/Amsterdam').timestamp,
                                  'status': 'success' if ret.returncode == 0 else 'failure',
-                             })
+                                 's3_synced': s3_synced,
+                             }, verify=False)
 
     if response.status_code != 200 and response.status_code != 201 and response.status_code != 404:
         send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
 
-        logger.info('#### Backup process for {} ended ####'.format(app))
+    logger.info('#### Backup process for {} ended ####'.format(app))
 
 
 def cron():

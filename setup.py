@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-__version__ = '1.9'
+__version__ = '2.0'
 
 setup(
     name='backopper',
