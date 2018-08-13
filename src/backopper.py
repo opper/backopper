@@ -66,7 +66,7 @@ def backup(app):
                                  'X-Secret-Key': os.environ.get('SECRET_KEY')
                              },
                              json={
-                                 'exec_time': arrow.now('Europe/Amsterdam').now,
+                                 'exec_time': arrow.now('Europe/Amsterdam').timestamp,
                                  'status': 'success' if ret.returncode == 0 else 'failure',
                              })
 
