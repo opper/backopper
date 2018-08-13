@@ -29,7 +29,7 @@ def backup(app):
     # loads the .env file into memory to have access to the db credentials
     load_dotenv(os.environ.get('ENV_FILE_LOCATION').format(app))
 
-    backup_folder = '/tmp'
+    backup_folder = BACKUPS_LOCATION.format(app)
 
     create_backups_folder(backup_folder)
     remove_old_backups(backup_folder)
