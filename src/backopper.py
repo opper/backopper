@@ -49,16 +49,20 @@ def backup(app):
         ),
         shell=True, stderr=True)
 
-    tar_file_name = 'media_{}.tar.gz'.format(datetime_now)
-    temporary_tar_location = '/tmp/{}'.format(tar_file_name)
-    media_command = subprocess.run(
-        'tar -cf {} {}'.format(
-            tar_file_name,
-            os.environ.get('MEDIA_FOLDER_LOCATION'.format(app))
-        ),
-        shell=True,
-        stderr=True,
-    )
+    potential_media_folder = os.environ.get('MEDIA_FOLDER_LOCATION').format(app)
+    media_backup = False
+    if os.path.exists(potential_media_folder):
+        tar_file_name = 'media_{}.tar.gz'.format(datetime_now)
+        temporary_tar_location = '/tmp/{}'.format(tar_file_name)
+        subprocess.run(
+            'tar -cf {} {}'.format(
+                temporary_tar_location,
+                potential_media_folder
+            ),
+            shell=True,
+            stderr=True,
+        )
+        media_backup = True
 
     # in case of error  (return code is different than 0),
     # send an email alerting of this
@@ -69,12 +73,6 @@ def backup(app):
     else:
         logger.info('Database dump completed successfully')
 
-    if media_command.returncode != 0:
-        logger.error('Media dump failed. Reason: {}'.format(media_command.stderr))
-        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), media_command.stderr)
-    else:
-        logger.info('Media dump completed successfully')
-
     project = requests.get('{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
                            headers={
                                'X-Secret-Key': os.environ.get('SECRET_KEY')
@@ -83,9 +81,8 @@ def backup(app):
     if dump_command.returncode == 0:
         s3_synced = post_to_s3('{}/{}.sql.gz'.format(backup_folder, datetime_now), app, datetime_now)
 
-    media_synced = ''
-    if media_command.returncode == 0:
-        media_synced = post_to_backups_service(temporary_tar_location, app)
+    if media_backup:
+        post_to_backups_service(temporary_tar_location, app)
 
     response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
                              headers={
