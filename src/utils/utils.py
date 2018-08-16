@@ -144,6 +144,8 @@ def post_to_backups_service(local_file, app_name):
     scp_client = scp.SCPClient(ssh_client.get_transport(), progress=None)
 
     try:
+        ssh_client.exec_command('mkdir -p /opt/media/{}/{}'.format(app_name, os.environ.get('ENVIRONMENT')))
+
         scp_client.put(local_file, os.environ.get('MEDIA_BACKUPS_FOLDER').format(
             app_name,
             os.environ.get('ENVIRONMENT')
