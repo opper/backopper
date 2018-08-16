@@ -156,3 +156,16 @@ def post_to_backups_service(local_file, app_name):
         exit(-8)
 
     scp_client.close()
+
+
+def remove_tmp_files():
+    files = glob('{}/media_*'.format('/tmp'))
+    files.sort(key=getmtime)
+
+    for file in files:
+        try:
+            unlink(file)
+        except OSError:
+            return False
+
+    return True

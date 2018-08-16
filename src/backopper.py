@@ -11,7 +11,7 @@ from crontab import CronTab
 from dotenv import load_dotenv
 
 from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, post_to_s3, remove_old_backups, \
-    send_mail, post_to_backups_service
+    send_mail, post_to_backups_service, remove_tmp_files
 
 SERVERS = {
     'staging': '192.81.221.208',
@@ -83,6 +83,7 @@ def backup(app):
 
     if media_backup:
         post_to_backups_service(temporary_tar_location, app)
+        remove_tmp_files()
 
     response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
                              headers={
