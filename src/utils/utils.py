@@ -56,7 +56,7 @@ def create_backups_folder(folder):
 
 
 def get_latest_backup(command, host):
-    ssh_client = Client.get_instance(host)
+    ssh_client = Client.get_instance(host, 'serverpilot')
 
     ssh_client.load_system_host_keys()
     (stdin, stdout, stderr) = ssh_client.exec_command(command)
@@ -79,7 +79,7 @@ def get_latest_backup(command, host):
 
 
 def download_backup_file(file, host):
-    ssh_client = Client.get_instance(host)
+    ssh_client = Client.get_instance(host, 'serverpilot')
 
     # SCPCLient takes a paramiko transport as an argument
     scp_client = scp.SCPClient(ssh_client.get_transport(), progress=progress)
@@ -87,7 +87,7 @@ def download_backup_file(file, host):
     try:
         scp_client.get(file, environ.get('HOME'))
     except SCPException as scpe:
-        print('Error fetching the file: {}'.format(scpe))
+        print('Error fetching the file: {}'.format(str(scpe)))
 
         exit(-3)
 
@@ -136,3 +136,21 @@ def post_to_s3(path_to_dump, app_name, datetime):
         return False
 
     return True
+
+
+def post_to_backups_service(local_file, app_name):
+    ssh_client = Client.get_instance(os.environ.get('BACKUPS_HOST'), os.environ.get('BACKUPS_USER'))
+
+    scp_client = scp.SCPClient(ssh_client.get_transport(), progress=None)
+
+    try:
+        scp_client.put(local_file, os.environ.get('MEDIA_BACKUPS_FOLDER').format(
+            app_name,
+            os.environ.get('ENVIRONMENT')
+        ))
+    except SCPException as scpe:
+        print('Error putting file: {}'.format(str(scpe)))
+
+        exit(-8)
+
+    scp_client.close()
