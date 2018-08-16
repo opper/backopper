@@ -11,7 +11,7 @@ from crontab import CronTab
 from dotenv import load_dotenv
 
 from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, post_to_s3, remove_old_backups, \
-    send_mail
+    send_mail, post_to_backups_service
 
 SERVERS = {
     'staging': '192.81.221.208',
@@ -39,7 +39,7 @@ def backup(app):
 
     # attempt to run the mysqldump process and save the gzipped dump to the backups location
     datetime_now = arrow.now('Europe/Amsterdam').format('YYYYMMDDHHmmss')
-    ret = subprocess.run(
+    dump_command = subprocess.run(
         'mysqldump --user="{}" --password="{}" {} | gzip > {}/{}.sql.gz'.format(
             os.environ.get('DB_USERNAME'),
             os.environ.get('DB_PASSWORD'),
@@ -49,22 +49,43 @@ def backup(app):
         ),
         shell=True, stderr=True)
 
+    tar_file_name = 'media_{}.tar.gz'.format(datetime_now)
+    temporary_tar_location = '/tmp/{}'.format(tar_file_name)
+    media_command = subprocess.run(
+        'tar -cf {} {}'.format(
+            tar_file_name,
+            os.environ.get('MEDIA_FOLDER_LOCATION'.format(app))
+        ),
+        shell=True,
+        stderr=True,
+    )
+
     # in case of error  (return code is different than 0),
     # send an email alerting of this
     # otherwise, post to cloud-admin that the backup has been done successfuly
-    if ret.returncode != 0:
-        logger.error('Dump failed. Reason: {}'.format(ret.stderr))
-        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), ret.stderr)
+    if dump_command.returncode != 0:
+        logger.error('Database dump failed. Reason: {}'.format(dump_command.stderr))
+        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), dump_command.stderr)
     else:
-        logger.info('Dump completed successfully')
+        logger.info('Database dump completed successfully')
+
+    if media_command.returncode != 0:
+        logger.error('Media dump failed. Reason: {}'.format(media_command.stderr))
+        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), media_command.stderr)
+    else:
+        logger.info('Media dump completed successfully')
 
     project = requests.get('{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
                            headers={
                                'X-Secret-Key': os.environ.get('SECRET_KEY')
                            }).json()
     s3_synced = False
-    if ret.returncode == 0:
+    if dump_command.returncode == 0:
         s3_synced = post_to_s3('{}/{}.sql.gz'.format(backup_folder, datetime_now), app, datetime_now)
+
+    media_synced = ''
+    if media_command.returncode == 0:
+        media_synced = post_to_backups_service(temporary_tar_location, app)
 
     response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
                              headers={
@@ -72,7 +93,7 @@ def backup(app):
                              },
                              json={
                                  'exec_time': arrow.now('Europe/Amsterdam').timestamp,
-                                 'status': 'success' if ret.returncode == 0 else 'failure',
+                                 'status': 'success' if dump_command.returncode == 0 else 'failure',
                                  's3_synced': s3_synced,
                              })
 
