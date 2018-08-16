@@ -55,7 +55,7 @@ def backup(app):
         tar_file_name = 'media_{}.tar.gz'.format(datetime_now)
         temporary_tar_location = '/tmp/{}'.format(tar_file_name)
         subprocess.run(
-            'tar -cf {} {}'.format(
+            'tar -czf {} -C {} uploads'.format(
                 temporary_tar_location,
                 potential_media_folder
             ),
