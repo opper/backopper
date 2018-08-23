@@ -105,6 +105,7 @@ def progress(filename, size, sent):
 def post_to_s3(path_to_dump, app_name, datetime):
     # disable debug stuff being uploaded to s3
     logging.getLogger('boto3').setLevel(logging.WARNING)
+    logger = logging.getLogger('backopper')
     
     s3 = boto3.client(
         's3',
@@ -131,7 +132,7 @@ def post_to_s3(path_to_dump, app_name, datetime):
     try:
         s3.upload_file(path_to_dump, backups_bucket, file_name)
     except S3UploadFailedError as e:
-        send_mail('Error syncing to s3', str(e))
+        logger.info('Error syncing to s3: {}. For app: {}'.format(str(e), app_name))
 
         return False
 
@@ -139,6 +140,9 @@ def post_to_s3(path_to_dump, app_name, datetime):
 
 
 def post_to_backups_service(local_file, app_name):
+    logger = logging.getLogger('backopper')
+    logging.getLogger('paramiko').setLevel(logging.WARNING)
+
     ssh_client = Client.get_instance(os.environ.get('BACKUPS_HOST'), os.environ.get('BACKUPS_USER'))
 
     scp_client = scp.SCPClient(ssh_client.get_transport(), progress=None)
@@ -151,9 +155,9 @@ def post_to_backups_service(local_file, app_name):
             os.environ.get('ENVIRONMENT')
         ))
     except SCPException as scpe:
-        print('Error putting file: {}'.format(str(scpe)))
+        logger.info('Error putting file: {}. For app: {}'.format(str(scpe), app_name))
 
-        exit(-8)
+        return False
 
     scp_client.close()
 
