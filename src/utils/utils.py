@@ -105,6 +105,8 @@ def progress(filename, size, sent):
 def post_to_s3(path_to_dump, app_name, datetime):
     # disable debug stuff being uploaded to s3
     logging.getLogger('boto3').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.WARN)
+
     logger = logging.getLogger('backopper')
     
     s3 = boto3.client(
@@ -122,9 +124,9 @@ def post_to_s3(path_to_dump, app_name, datetime):
             backups_bucket = bucket
 
     if backups_bucket is None:
-        print('Could not find bucket to upload dump to. Available buckets: {}'.format(buckets))
+        logger.error('Could not find bucket to upload dump to. Available buckets: {}'.format(buckets))
 
-        exit(-4)
+        return False
 
     # file name = $project_name/$environment/backup_$datetime.gz
     file_name = '{}/{}/backup_{}.gz'.format(app_name, os.environ.get('ENVIRONMENT'), datetime)
@@ -148,14 +150,19 @@ def post_to_backups_service(local_file, app_name):
     scp_client = scp.SCPClient(ssh_client.get_transport(), progress=None)
 
     try:
+        logger.info('Creating media folder for: {} on {}'.format(app_name, os.environ.get('ENVIRONMENT')))
         ssh_client.exec_command('mkdir -p /opt/media/{}/{}'.format(app_name, os.environ.get('ENVIRONMENT')))
 
+        logger.info('Local file to be scpd exists: {}'.format(os.path.exists(local_file)))
+        logger.info('Preparing to scp media file "{}" for: {}'.format(local_file, app_name))
         scp_client.put(local_file, os.environ.get('MEDIA_BACKUPS_FOLDER').format(
             app_name,
             os.environ.get('ENVIRONMENT')
         ))
+
+        logger.info('Local file scpd correctly.')
     except SCPException as scpe:
-        logger.info('Error putting file: {}. For app: {}'.format(str(scpe), app_name))
+        logger.error('Error putting file: {}. For app: {}'.format(str(scpe), app_name))
 
         return False
 

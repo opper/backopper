@@ -81,6 +81,7 @@ def backup(app):
     if dump_command.returncode == 0:
         s3_synced = post_to_s3('{}/{}.sql.gz'.format(backup_folder, datetime_now), app, datetime_now)
 
+    logger.info('Media backup for {}: {}'.format(app, media_backup))
     if media_backup:
         post_to_backups_service(temporary_tar_location, app)
         remove_tmp_files()
