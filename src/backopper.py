@@ -55,7 +55,7 @@ def backup(app):
                                                               os.path.exists(potential_media_folder)))
     media_backup = False
     if os.path.exists(potential_media_folder):
-        app_hash = hashlib.md5(app).hexdigest()[:4]  # to avoid shenanigans with duplicated files
+        app_hash = hashlib.md5(app.encode('utf-8')).hexdigest()[:4]  # to avoid shenanigans with duplicated files
         tar_file_name = 'media_{}_{}.tar.gz'.format(app_hash, datetime_now)
         temporary_tar_location = '/tmp/{}'.format(tar_file_name)
         subprocess.run(
