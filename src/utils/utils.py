@@ -161,8 +161,8 @@ def post_to_backups_service(local_file, app_name):
         ))
 
         logger.info('Local file scpd correctly.')
-    except SCPException as scpe:
-        logger.error('Error putting file: {}. For app: {}'.format(str(scpe), app_name))
+    except Exception as e: # broader except clause to debug
+        logger.error('Error putting file: {}. For app: {}'.format(str(e), app_name))
 
         return False
 
