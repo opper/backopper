@@ -6,12 +6,13 @@ import logging.config
 import os
 import requests
 import socket
+import hashlib
 import subprocess
 from crontab import CronTab
 from dotenv import load_dotenv
 
-from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, post_to_s3, remove_old_backups, \
-    send_mail, post_to_backups_service, remove_tmp_files
+from .utils.utils import create_backups_folder, download_backup_file, get_latest_backup, post_to_backups_service, \
+    post_to_s3, remove_old_backups, remove_tmp_files, send_mail
 
 SERVERS = {
     'staging': '192.81.221.208',
@@ -50,9 +51,12 @@ def backup(app):
         shell=True, stderr=True)
 
     potential_media_folder = os.environ.get('MEDIA_FOLDER_LOCATION').format(app)
+    logger.info('Media folder {} for app {} exists {}'.format(potential_media_folder, app,
+                                                              os.path.exists(potential_media_folder)))
     media_backup = False
     if os.path.exists(potential_media_folder):
-        tar_file_name = 'media_{}.tar.gz'.format(datetime_now)
+        app_hash = hashlib.md5(app).hexdigest()[:4]  # to avoid shenanigans with duplicated files
+        tar_file_name = 'media_{}_{}.tar.gz'.format(app_hash, datetime_now)
         temporary_tar_location = '/tmp/{}'.format(tar_file_name)
         subprocess.run(
             'tar -czf {} -C {} uploads'.format(
@@ -84,7 +88,6 @@ def backup(app):
     logger.info('Media backup for {}: {}'.format(app, media_backup))
     if media_backup:
         post_to_backups_service(temporary_tar_location, app)
-        remove_tmp_files()
 
     response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
                              headers={
@@ -226,6 +229,10 @@ def import_db(file_path):
         os.unlink(full_file_path)
 
 
+def clean():
+    remove_tmp_files()
+
+
 @click.command()
 @click.option('--action')
 @click.option('--app')
@@ -239,3 +246,5 @@ def main(action, app, environment):
         cron()
     elif action == 'download':
         download(app, environment)
+    elif action == 'clean':
+        clean()

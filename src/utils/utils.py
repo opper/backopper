@@ -161,7 +161,7 @@ def post_to_backups_service(local_file, app_name):
         ))
 
         logger.info('Local file scpd correctly.')
-    except Exception as e: # broader except clause to debug
+    except Exception as e:  # broader except clause to debug
         logger.error('Error putting file: {}. For app: {}'.format(str(e), app_name))
 
         return False
