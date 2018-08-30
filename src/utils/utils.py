@@ -170,13 +170,16 @@ def post_to_backups_service(local_file, app_name):
 
 
 def remove_tmp_files():
+    logger = logging.getLogger('backopper')
+
     files = glob('{}/media_*'.format('/tmp'))
-    files.sort(key=getmtime)
+    logger.info('Preparing to delete: {}'.format(files))
 
     for file in files:
         try:
             unlink(file)
-        except OSError:
+        except OSError as e:
+            logger.error('Could not delete temp file: {} - {}'.format(file, str(e)))
             return False
 
     return True
