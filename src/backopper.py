@@ -1,12 +1,12 @@
 import arrow
 import click
 import getpass
+import hashlib
 import json
 import logging.config
 import os
 import requests
 import socket
-import hashlib
 import subprocess
 from crontab import CronTab
 from dotenv import load_dotenv
@@ -51,11 +51,15 @@ def backup(app):
         shell=True, stderr=True)
 
     potential_media_folder = os.environ.get('MEDIA_FOLDER_LOCATION').format(app)
-    logger.info('Media folder {} for app {} exists {}'.format(potential_media_folder, app,
-                                                              os.path.exists(potential_media_folder)))
+    logger.info('Media folder {} for app {} exists {}'.format(
+        potential_media_folder,
+        app,
+        os.path.exists(potential_media_folder))
+    )
     media_backup = False
     if os.path.exists(potential_media_folder):
-        app_hash = hashlib.md5(app.encode('utf-8')).hexdigest()[:4]  # to avoid shenanigans with duplicated files
+        # to avoid shenanigans with duplicated files
+        app_hash = hashlib.md5('{}{}'.format(app.encode('utf-8'), datetime_now)).hexdigest()[:4]
         tar_file_name = 'media_{}_{}.tar.gz'.format(app_hash, datetime_now)
         temporary_tar_location = '/tmp/{}'.format(tar_file_name)
         subprocess.run(
@@ -73,14 +77,18 @@ def backup(app):
     # otherwise, post to cloud-admin that the backup has been done successfuly
     if dump_command.returncode != 0:
         logger.error('Database dump failed. Reason: {}'.format(dump_command.stderr))
-        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), dump_command.stderr)
+        send_mail(subj=json.dumps({
+            'hostname': socket.gethostname(),
+            'app': app
+        }), error=dump_command.stderr)
     else:
         logger.info('Database dump completed successfully')
 
-    project = requests.get('{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
-                           headers={
-                               'X-Secret-Key': os.environ.get('SECRET_KEY')
-                           }).json()
+    project = requests.get(
+        url='{}/projects/name/{}'.format(os.environ.get('API_BASE_URL'), app),
+        headers={
+            'X-Secret-Key': os.environ.get('SECRET_KEY')
+        }).json()
     s3_synced = False
     if dump_command.returncode == 0:
         s3_synced = post_to_s3('{}/{}.sql.gz'.format(backup_folder, datetime_now), app, datetime_now)
@@ -89,18 +97,22 @@ def backup(app):
     if media_backup:
         post_to_backups_service(temporary_tar_location, app)
 
-    response = requests.post(os.environ.get('API_POST_URL').format(project['id']),
-                             headers={
-                                 'X-Secret-Key': os.environ.get('SECRET_KEY')
-                             },
-                             json={
-                                 'exec_time': arrow.now('Europe/Amsterdam').timestamp,
-                                 'status': 'success' if dump_command.returncode == 0 else 'failure',
-                                 's3_synced': s3_synced,
-                             })
+    response = requests.post(
+        url=os.environ.get('API_POST_URL').format(project['id']),
+        headers={
+            'X-Secret-Key': os.environ.get('SECRET_KEY')
+        },
+        json={
+            'exec_time': arrow.now('Europe/Amsterdam').timestamp,
+            'status': 'success' if dump_command.returncode == 0 else 'failure',
+            's3_synced': s3_synced,
+        })
 
     if response.status_code != 200 and response.status_code != 201 and response.status_code != 404:
-        send_mail(json.dumps({'hostname': socket.gethostname(), 'app': app}), response.text)
+        send_mail(json.dumps({
+            'hostname': socket.gethostname(),
+            'app': app
+        }), response.text)
 
     logger.info('#### Backup process for {} ended ####'.format(app))
 
@@ -110,9 +122,12 @@ def cron():
     logger = logging.getLogger(__name__)
 
     logger.info('#### Cron started')
-    response = requests.get(os.environ.get('API_GET_URL').format(os.environ.get('ENVIRONMENT')), headers={
-        'X-Secret-Key': os.environ.get('SECRET_KEY')
-    }).json()
+    response = requests.get(
+        url=os.environ.get('API_GET_URL').format(os.environ.get('ENVIRONMENT')),
+        headers={
+            'X-Secret-Key': os.environ.get('SECRET_KEY')
+        }
+    ).json()
 
     # create cron object based on user's crontab
     cron_obj = CronTab(user=getpass.getuser())
