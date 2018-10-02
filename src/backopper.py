@@ -15,9 +15,9 @@ from .utils.utils import create_backups_folder, download_backup_file, get_latest
     post_to_s3, remove_old_backups, remove_tmp_files, send_mail
 
 SERVERS = {
-    'staging': '192.81.221.208',
-    'acceptance': '188.166.13.154',
-    'live': '188.166.77.230',
+    'staging': '',
+    'acceptance': '',
+    'live': '',
 }
 
 BACKUPS_LOCATION = '/opt/backups/{}'
