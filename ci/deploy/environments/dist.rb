@@ -1,4 +1,4 @@
-server '188.166.87.42', roles: %w{dist}, user: fetch(:deploy_user), port: 222
+server '', roles: %w{dist}, user: fetch(:deploy_user), port: 222
 
 # login to remote server is done via ssh-key authentication
 # never, ever with password
