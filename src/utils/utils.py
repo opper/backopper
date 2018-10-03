@@ -56,7 +56,7 @@ def create_backups_folder(folder):
 
 
 def get_latest_backup(command, host):
-    ssh_client = Client.get_instance(host, 'serverpilot')
+    ssh_client = Client.get_instance(host, environ.get('SSH_USER'))
 
     ssh_client.load_system_host_keys()
     (stdin, stdout, stderr) = ssh_client.exec_command(command)
@@ -79,7 +79,7 @@ def get_latest_backup(command, host):
 
 
 def download_backup_file(file, host):
-    ssh_client = Client.get_instance(host, 'serverpilot')
+    ssh_client = Client.get_instance(host, environ.get('SSH_USER'))
 
     # SCPCLient takes a paramiko transport as an argument
     scp_client = scp.SCPClient(ssh_client.get_transport(), progress=progress)
