@@ -128,8 +128,8 @@ def post_to_s3(path_to_dump, app_name, datetime):
 
         return False
 
-    # file name = $project_name/$environment/backup_$datetime.gz
-    file_name = '{}/{}/backup_{}.gz'.format(app_name, os.environ.get('ENVIRONMENT'), datetime)
+    # file name = $project_name/$environment/backup_$datetime.sql.gz
+    file_name = '{}/{}/backup_{}.sql.gz'.format(app_name, os.environ.get('ENVIRONMENT'), datetime)
 
     try:
         s3.upload_file(path_to_dump, backups_bucket, file_name)
