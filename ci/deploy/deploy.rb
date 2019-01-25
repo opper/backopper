@@ -2,7 +2,7 @@
 lock '~> 3.10.0'
 
 set :application, 'backopper'
-set :repo_url, 'git@github.com:opper/backopper.git'
+set :repo_url, 'git@bitbucket.org:opper/backopper.git'
 
 set :branch, 'master'
 
