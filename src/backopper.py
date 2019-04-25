@@ -132,6 +132,12 @@ def cron():
     # create cron object based on user's crontab
     cron_obj = CronTab(user=getpass.getuser())
 
+    # quick cleanup of old jobs that don't belong anymore
+    for job in cron_obj.comments:
+        if job not in [item['name'] for item in response]:
+            cron_job = list(cron_obj.find_comment(job))
+            cron_obj.remove(cron_job)
+
     for item in response:
         name = item['name']
         frequency = item['frequency']
