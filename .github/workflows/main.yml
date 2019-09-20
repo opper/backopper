@@ -26,7 +26,7 @@ jobs:
       - name: Get dependencies
         run: |
           export GOBIN="$HOME/go/bin"
-          export GOPATH="$HOME/go/src"
+          export GOPATH="$HOME/work"
           export PATH=$PATH:$GOBIN
 
           go get -v -t -d ./...
