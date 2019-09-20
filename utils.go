@@ -8,8 +8,7 @@ import (
     "github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/s3"
     "github.com/bramvdbogaerde/go-scp"
-    "github.com/bramvdbogaerde/go-scp/auth"
-    "golang.org/x/crypto/ssh/knownhosts"
+    "golang.org/x/crypto/ssh"
     "io/ioutil"
     "net/http"
     "os"
@@ -53,15 +52,17 @@ func awsClient() *s3.S3 {
 
 func scpClient(user string, host string) scp.Client {
     homeDir, _ := os.UserHomeDir()
+    privateKey, _ := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa", homeDir))
+    signer, _ := ssh.ParsePrivateKey(privateKey)
 
-    // TODO: not entirely sure if this is actually needed or not
-    hostsSomething, err := knownhosts.New(fmt.Sprintf("%s/.ssh/known_hosts", homeDir))
-
-    if err != nil {
-        fmt.Sprintf("%v\n", err)
+    sshAuth := []ssh.AuthMethod{
+        ssh.PublicKeys(signer),
     }
-
-    sshConfig, _ := auth.PrivateKey(user, fmt.Sprintf("%s/.ssh/id_rsa", homeDir), hostsSomething)
+    sshConfig := ssh.ClientConfig{
+        User: user,
+        Auth: sshAuth,
+        HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+    }
     scpClient := scp.NewClient(fmt.Sprintf("%s:222", host), &sshConfig)
 
     return scpClient
