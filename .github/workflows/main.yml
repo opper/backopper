@@ -1,4 +1,4 @@
-name: Backopper Go Action
+name: Backopper
 on:
   push:
     branches:
