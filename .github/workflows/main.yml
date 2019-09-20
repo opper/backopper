@@ -18,6 +18,7 @@ jobs:
       - name: Fix path shenanigans
         run: |
           export GOPATH=$HOME/go
+          export GOBIN=$GOPATH/bin
 
       - name: Get dependencies
         run: |
