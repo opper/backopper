@@ -21,12 +21,13 @@ jobs:
       - name: Install godep
         run: |
           mkdir -p $HOME/go/bin
-          export PATH="$PATH:$GOPATH/bin"
 
           curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
       - name: Get dependencies
         run: |
+          export PATH="$PATH:$GOPATH/bin"
+          
           go get -v -t -d ./...
 
           dep ensure
