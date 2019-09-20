@@ -61,7 +61,7 @@ func scpClient(user string, host string) scp.Client {
     sshConfig := ssh.ClientConfig{
         User: user,
         Auth: sshAuth,
-        HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+        HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: at some point should take a look at this
     }
     scpClient := scp.NewClient(fmt.Sprintf("%s:222", host), &sshConfig)
 

@@ -7,6 +7,7 @@ import (
     "github.com/aws/aws-sdk-go/aws"
     "github.com/aws/aws-sdk-go/service/s3"
     "github.com/jasonlvhit/gocron"
+    "github.com/joho/godotenv"
     "io"
     "os"
     "os/exec"
@@ -43,39 +44,39 @@ func mainCronHandler() {
 
 func doBackup(project string) {
     fmt.Println(fmt.Sprintf("Starting database backup for %s", project))
-    //err := godotenv.Overload(fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), project))
-    //
-    //if err != nil {
-    //    fmt.Printf("error loading .env for %s: %v", project, err)
-    //    return
-    //}
-    //
-    //// Mon Jan 2 15:04:05 -0700 MST 2006
-    //dateTimeNow := time.Now().Format("20060102150405")
-    //backupsFolder := fmt.Sprintf(os.Getenv("BACKUPS_LOCATION"), project)
-    //backupFileName := fmt.Sprintf("%s/%s.sql.gz", backupsFolder, dateTimeNow)
-    //
-    //comm := exec.Command(
-    //    "bash",
-    //    "-c",
-    //    fmt.Sprintf(`mysqldump --user="%s" --password="%s" %s | gzip > %s`,
-    //        os.Getenv("DB_USERNAME"),
-    //        os.Getenv("DB_PASSWORD"),
-    //        os.Getenv("DB_DATABASE"),
-    //        backupFileName,
-    //    ),
-    //)
-    //err = comm.Run()
-    //dumpDone := true
-    //
-    //if err != nil {
-    //    dumpDone = false
-    //    fmt.Printf("failed executing db dump for %s: %v", project, err)
-    //}
-    //
-    //if dumpDone {
-    //    doS3Sync(backupFileName, project, dateTimeNow)
-    //}
+    err := godotenv.Overload(fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), project))
+
+    if err != nil {
+       fmt.Printf("error loading .env for %s: %v", project, err)
+       return
+    }
+
+    // Mon Jan 2 15:04:05 -0700 MST 2006
+    dateTimeNow := time.Now().Format("20060102150405")
+    backupsFolder := fmt.Sprintf(os.Getenv("BACKUPS_LOCATION"), project)
+    backupFileName := fmt.Sprintf("%s/%s.sql.gz", backupsFolder, dateTimeNow)
+
+    comm := exec.Command(
+       "bash",
+       "-c",
+       fmt.Sprintf(`mysqldump --user="%s" --password="%s" %s | gzip > %s`,
+           os.Getenv("DB_USERNAME"),
+           os.Getenv("DB_PASSWORD"),
+           os.Getenv("DB_DATABASE"),
+           backupFileName,
+       ),
+    )
+    err = comm.Run()
+    dumpDone := true
+
+    if err != nil {
+       dumpDone = false
+       fmt.Printf("failed executing db dump for %s: %v", project, err)
+    }
+
+    if dumpDone {
+       doS3Sync(backupFileName, project, dateTimeNow)
+    }
 
     doMediaBackup(project)
 }
