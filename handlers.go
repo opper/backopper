@@ -35,33 +35,42 @@ func mainCronHandler() {
             job = job.Hour()
         }
 
-        job.Do(doBackup, backup.Name)
+        job.Do(doBackup, backup)
     }
 
     _, _ = scheduler.NextRun()
     <-scheduler.Start()
 }
 
-func doBackup(project string) {
-    fmt.Println(fmt.Sprintf("Starting database backup for %s", project))
-    err := godotenv.Overload(fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), project))
+func doBackup(project BackupResponse) {
+    projectName := project.Name
+    fmt.Println(fmt.Sprintf("Starting database backup for %s", projectName))
+    err := godotenv.Overload(fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), projectName))
 
     if err != nil {
-       fmt.Printf("error loading .env for %s: %v", project, err)
+       fmt.Printf("error loading .env for %s: %v", projectName, err)
        return
     }
 
     // Mon Jan 2 15:04:05 -0700 MST 2006
     dateTimeNow := time.Now().Format("20060102150405")
-    backupsFolder := fmt.Sprintf(os.Getenv("BACKUPS_LOCATION"), project)
+    backupsFolder := fmt.Sprintf(os.Getenv("BACKUPS_LOCATION"), projectName)
     backupFileName := fmt.Sprintf("%s/%s.sql.gz", backupsFolder, dateTimeNow)
+    dumpCommand := ""
+
+    switch project.DBEngine {
+    case "mysql":
+        dumpCommand = `mysqldump --password="%s" --user="%s" %s | gzip > %s`
+    case "postgresql":
+        dumpCommand = `PGPASSWORD="%s" pg_dump -h 127.0.0.1 --username="%s" -F c %s > %s`
+    }
 
     comm := exec.Command(
        "bash",
        "-c",
-       fmt.Sprintf(`mysqldump --user="%s" --password="%s" %s | gzip > %s`,
-           os.Getenv("DB_USERNAME"),
+       fmt.Sprintf(dumpCommand,
            os.Getenv("DB_PASSWORD"),
+           os.Getenv("DB_USERNAME"),
            os.Getenv("DB_DATABASE"),
            backupFileName,
        ),
@@ -71,14 +80,14 @@ func doBackup(project string) {
 
     if err != nil {
        dumpDone = false
-       fmt.Printf("failed executing db dump for %s: %v", project, err)
+       fmt.Printf("failed executing db dump for %s: %v", projectName, err)
     }
 
     if dumpDone {
-       doS3Sync(backupFileName, project, dateTimeNow)
+       doS3Sync(backupFileName, projectName, dateTimeNow)
     }
 
-    doMediaBackup(project)
+    doMediaBackup(projectName)
 }
 
 func doS3Sync(backupFile string, projectName string, dateTimeNow string) {
