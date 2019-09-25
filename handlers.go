@@ -38,6 +38,8 @@ func mainCronHandler() {
         job.Do(doBackup, backup)
     }
 
+    // this shouldn't cause any issues with in-progress dumps that haven't been scp'd to the media server
+    // shouldn't
     cleanTmpFolder()
 
     _, _ = scheduler.NextRun()
@@ -64,6 +66,7 @@ func doBackup(project BackupResponse) {
     case "mysql":
         dumpCommand = `mysqldump --password="%s" --user="%s" %s | gzip > %s`
     case "postgresql":
+        // host is needed in the pg_dump command because if not specified, it'll attempt to log-in with peer auth
         dumpCommand = `PGPASSWORD="%s" pg_dump -h 127.0.0.1 --username="%s" -F c %s > %s`
     }
 
@@ -127,6 +130,8 @@ func doMediaBackup(projectName string) {
     tempMediaLocation := fmt.Sprintf("/tmp/%s", fileName)
     mediaFolder := fmt.Sprintf(os.Getenv("MEDIA_FOLDER_LOCATION"), projectName)
 
+    // for now only handles wp-style media folders (meaning that mediaFolder is likely something like
+    // /var/www/proj/wp-content/uploads. should probs make it handle laravel's uploads also in the future.
     command := exec.Command(
         "tar",
         "-czf",
@@ -145,6 +150,9 @@ func doMediaBackup(projectName string) {
     }
 
     if mediaBackupDone {
+        // because the syncing of the media dump to the media server is done in a co-routine, there might be issues with
+        // the cleaning of the old temp files from /tmp. it can happen that the process will attempt to remove a file
+        // that's either in progress or not synced yet. will have to test see if this is indeed the case or not.
         go func() {
             doMediaServerSync(tempMediaLocation, projectName, fileName)
         }()
