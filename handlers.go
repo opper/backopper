@@ -150,7 +150,7 @@ func doMediaBackup(projectName string) {
     }
 
     if mediaBackupDone {
-        // because the syncing of the media dump to the media server is done in a co-routine, there might be issues with
+        // because the syncing of the media dump to the media server is done in a goroutine, there might be issues with
         // the cleaning of the old temp files from /tmp. it can happen that the process will attempt to remove a file
         // that's either in progress or not synced yet. will have to test see if this is indeed the case or not.
         go func() {
