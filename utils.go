@@ -12,6 +12,7 @@ import (
     "io/ioutil"
     "net/http"
     "os"
+    "path/filepath"
 )
 
 func request(url string, method string, returnValue Response) {
@@ -66,4 +67,12 @@ func scpClient(user string, host string) scp.Client {
     scpClient := scp.NewClient(fmt.Sprintf("%s:222", host), &sshConfig)
 
     return scpClient
+}
+
+func cleanTmpFolder() {
+    tempMediaBackups, _ := filepath.Glob("/tmp/media*.tar.gz")
+
+    for _, file := range tempMediaBackups {
+        _ = os.Remove(file)
+    }
 }

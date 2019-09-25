@@ -38,6 +38,8 @@ func mainCronHandler() {
         job.Do(doBackup, backup)
     }
 
+    cleanTmpFolder()
+
     _, _ = scheduler.NextRun()
     <-scheduler.Start()
 }
@@ -48,8 +50,8 @@ func doBackup(project BackupResponse) {
     err := godotenv.Overload(fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), projectName))
 
     if err != nil {
-       fmt.Printf("error loading .env for %s: %v", projectName, err)
-       return
+        fmt.Printf("error loading .env for %s: %v", projectName, err)
+        return
     }
 
     // Mon Jan 2 15:04:05 -0700 MST 2006
@@ -66,25 +68,25 @@ func doBackup(project BackupResponse) {
     }
 
     comm := exec.Command(
-       "bash",
-       "-c",
-       fmt.Sprintf(dumpCommand,
-           os.Getenv("DB_PASSWORD"),
-           os.Getenv("DB_USERNAME"),
-           os.Getenv("DB_DATABASE"),
-           backupFileName,
-       ),
+        "bash",
+        "-c",
+        fmt.Sprintf(dumpCommand,
+            os.Getenv("DB_PASSWORD"),
+            os.Getenv("DB_USERNAME"),
+            os.Getenv("DB_DATABASE"),
+            backupFileName,
+        ),
     )
     err = comm.Run()
     dumpDone := true
 
     if err != nil {
-       dumpDone = false
-       fmt.Printf("failed executing db dump for %s: %v", projectName, err)
+        dumpDone = false
+        fmt.Printf("failed executing db dump for %s: %v", projectName, err)
     }
 
     if dumpDone {
-       doS3Sync(backupFileName, projectName, dateTimeNow)
+        doS3Sync(backupFileName, projectName, dateTimeNow)
     }
 
     doMediaBackup(projectName)
