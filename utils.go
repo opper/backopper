@@ -8,6 +8,7 @@ import (
     "github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/s3"
     "github.com/bramvdbogaerde/go-scp"
+    "github.com/jasonlvhit/gocron"
     "golang.org/x/crypto/ssh"
     "io/ioutil"
     "net/http"
@@ -36,6 +37,20 @@ func request(url string, method string, returnValue Response) {
     }
 
     _ = json.Unmarshal(body, &returnValue)
+}
+
+func scheduleBackup(backup BackupResponse, scheduler *gocron.Scheduler) {
+    job := scheduler.Every(1)
+
+    switch backup.Frequency {
+    case "daily":
+        // TOOD: change this to actually daily freq as opposed to minute as it is now. only for testing purposes
+        job = job.Minute()
+    case "hourly":
+        job = job.Hour()
+    }
+
+    job.Do(doBackup, backup)
 }
 
 func awsClient() *s3.S3 {

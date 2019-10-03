@@ -11,6 +11,7 @@ import (
     "io"
     "os"
     "os/exec"
+    "strconv"
     "time"
 )
 
@@ -23,19 +24,18 @@ func mainCronHandler() {
     request(url, "GET", &backups)
 
     scheduler := gocron.NewScheduler()
+    singleProject, _ := strconv.ParseBool(os.Getenv("SINGLE_PROJECT"))
 
-    for _, backup := range backups {
-        job := scheduler.Every(1)
-
-        switch backup.Frequency {
-        case "daily":
-            // TOOD: change this to actually daily freq as opposed to minute as it is now. only for testing purposes
-            job = job.Minute()
-        case "hourly":
-            job = job.Hour()
+    if singleProject == false {
+        for _, backup := range backups {
+            scheduleBackup(backup, scheduler)
         }
-
-        job.Do(doBackup, backup)
+    } else {
+        for _, backup := range backups {
+            if backup.Name == os.Getenv("PROJECT_NAME") {
+                scheduleBackup(backup, scheduler)
+            }
+        }
     }
 
     // this shouldn't cause any issues with in-progress dumps that haven't been scp'd to the media server
@@ -49,7 +49,17 @@ func mainCronHandler() {
 func doBackup(project BackupResponse) {
     projectName := project.Name
     fmt.Println(fmt.Sprintf("Starting database backup for %s", projectName))
-    err := godotenv.Overload(fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), projectName))
+
+    envFileLocation := ""
+    singleProject, _ := strconv.ParseBool(os.Getenv("SINGLE_PROJECT"))
+
+    if singleProject {
+        envFileLocation = os.Getenv("ENV_FILE_LOCATION")
+    } else {
+        envFileLocation = fmt.Sprintf(os.Getenv("ENV_FILE_LOCATION"), projectName)
+    }
+
+    err := godotenv.Overload(envFileLocation)
 
     if err != nil {
         fmt.Printf("error loading .env for %s: %v", projectName, err)
@@ -64,38 +74,42 @@ func doBackup(project BackupResponse) {
 
     switch project.DBEngine {
     case "mysql":
-        dumpCommand = `mysqldump --password="%s" --user="%s" %s | gzip > %s`
+        dumpCommand = `mysqldump --password="%s" --host="localhost" --user="%s" %s | gzip > %s`
     case "postgresql":
         // host is needed in the pg_dump command because if not specified, it'll attempt to log-in with peer auth
         dumpCommand = `PGPASSWORD="%s" pg_dump -h 127.0.0.1 --username="%s" -F c %s > %s`
     }
 
+    command := fmt.Sprintf(dumpCommand,
+        os.Getenv("DB_PASSWORD"),
+        os.Getenv("DB_USERNAME"),
+        os.Getenv("DB_DATABASE"),
+        backupFileName,
+    )
+
     comm := exec.Command(
         "bash",
         "-c",
-        fmt.Sprintf(dumpCommand,
-            os.Getenv("DB_PASSWORD"),
-            os.Getenv("DB_USERNAME"),
-            os.Getenv("DB_DATABASE"),
-            backupFileName,
-        ),
+        command,
     )
     err = comm.Run()
     dumpDone := true
 
     if err != nil {
         dumpDone = false
-        fmt.Printf("failed executing db dump for %s: %v", projectName, err)
+        fmt.Printf("failed executing db dump for %s: %v-%v\n", projectName, err, comm.Stderr)
     }
 
     if dumpDone {
         doS3Sync(backupFileName, projectName, dateTimeNow)
     }
 
+    fmt.Printf("Database backup for %s done\n", projectName)
     doMediaBackup(projectName)
 }
 
 func doS3Sync(backupFile string, projectName string, dateTimeNow string) {
+    fmt.Printf("Starting s3 sync for %s\n", projectName)
     s3Client := awsClient()
 
     file, _ := os.Open(backupFile)
@@ -115,6 +129,7 @@ func doS3Sync(backupFile string, projectName string, dateTimeNow string) {
         ContentLength: aws.Int64(size),
         Key:           aws.String(fileKey),
     })
+    fmt.Printf("S3 sync finished for %s\n", projectName)
 }
 
 func doMediaBackup(projectName string) {
@@ -128,7 +143,14 @@ func doMediaBackup(projectName string) {
     // makes a filename like media_012a_20060102150405.tar.gz.
     fileName := fmt.Sprintf("media_%x_%s.tar.gz", hash.Sum(nil)[:2], dateTimeNow)
     tempMediaLocation := fmt.Sprintf("/tmp/%s", fileName)
-    mediaFolder := fmt.Sprintf(os.Getenv("MEDIA_FOLDER_LOCATION"), projectName)
+    mediaFolder := ""
+    singleProject, _ := strconv.ParseBool(os.Getenv("SINGLE_PROJECT"))
+
+    if singleProject {
+        mediaFolder = os.Getenv("MEDIA_FOLDER_LOCATION")
+    } else {
+        mediaFolder = fmt.Sprintf(os.Getenv("MEDIA_FOLDER_LOCATION"), projectName)
+    }
 
     // for now only handles wp-style media folders (meaning that mediaFolder is likely something like
     // /var/www/proj/wp-content/uploads. should probs make it handle laravel's uploads also in the future.
@@ -145,9 +167,10 @@ func doMediaBackup(projectName string) {
     mediaBackupDone := true
 
     if err != nil {
-        fmt.Printf("failed executing media backup for %s: %v", projectName, err)
+        fmt.Printf("failed executing media backup for %s: %v\n", projectName, err)
         mediaBackupDone = false
     }
+    fmt.Printf("media backup done for %s\n", projectName)
 
     if mediaBackupDone {
         // because the syncing of the media dump to the media server is done in a goroutine, there might be issues with
@@ -180,7 +203,8 @@ func doMediaServerSync(mediaLocation string, projectName string, fileName string
     err = scpClient.Copy(file, fmt.Sprintf(os.Getenv("MEDIA_BACKUPS_FOLDER"), projectName, fileName), "0644", fileInfo.Size())
 
     if err != nil {
-        fmt.Printf("failed to scp file to media server: %v", err)
+        fmt.Printf("failed to scp file to media server: %v\n", err)
         return
     }
+    fmt.Printf("media server sync finished for %s\n", projectName)
 }
