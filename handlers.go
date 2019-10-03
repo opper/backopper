@@ -72,6 +72,10 @@ func doBackup(project BackupResponse) {
     backupFileName := fmt.Sprintf("%s/%s.sql.gz", backupsFolder, dateTimeNow)
     dumpCommand := ""
 
+    if _, err := os.Stat(backupsFolder); os.IsNotExist(err) {
+        _ = os.Mkdir(backupsFolder, 0644)
+    }
+
     switch project.DBEngine {
     case "mysql":
         dumpCommand = `mysqldump --password="%s" --host="localhost" --user="%s" %s | gzip > %s`
