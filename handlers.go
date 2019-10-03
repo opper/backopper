@@ -107,6 +107,7 @@ func doBackup(project BackupResponse) {
     if dumpDone {
         doS3Sync(backupFileName, projectName, dateTimeNow)
     }
+    cleanOldBackups(backupsFolder)
 
     fmt.Printf("Database backup for %s done\n", projectName)
     doMediaBackup(projectName)

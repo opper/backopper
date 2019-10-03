@@ -14,6 +14,7 @@ import (
     "net/http"
     "os"
     "path/filepath"
+    "sort"
 )
 
 func request(url string, method string, returnValue Response) {
@@ -75,8 +76,8 @@ func scpClient(user string, host string) scp.Client {
         ssh.PublicKeys(signer),
     }
     sshConfig := ssh.ClientConfig{
-        User: user,
-        Auth: sshAuth,
+        User:            user,
+        Auth:            sshAuth,
         HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: at some point should take a look at this
     }
     scpClient := scp.NewClient(fmt.Sprintf("%s:222", host), &sshConfig)
@@ -89,5 +90,19 @@ func cleanTmpFolder() {
 
     for _, file := range tempMediaBackups {
         _ = os.Remove(file)
+    }
+}
+
+func cleanOldBackups(backupsLocation string) {
+    oldFiles, _ := ioutil.ReadDir(backupsLocation)
+
+    sort.Slice(oldFiles, func(i, j int) bool {
+        return oldFiles[i].ModTime().After(oldFiles[j].ModTime())
+    })
+
+    toDeleteFiles := oldFiles[5:]
+
+    for _, file := range toDeleteFiles {
+        _ = os.Remove(fmt.Sprintf("%s/%s", backupsLocation, file.Name()))
     }
 }
