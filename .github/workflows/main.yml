@@ -11,12 +11,19 @@ jobs:
           go-version: 1.13
         id: go
 
+      - name: Set GOPATH
+        # temporary fix
+        # see https://github.com/actions/setup-go/issues/14
+        run: |
+          echo "##[set-env name=GOPATH;]$(dirname $GITHUB_WORKSPACE)"
+          echo "##[add-path]$(dirname $GITHUB_WORKSPACE)/bin"
+        shell: bash
+
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
 
       - name: Get dependencies
         run: |
-          export GOPATH=$(go env GOPATH)
           curl -L -s https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 -o $GOPATH/bin/dep
           chmod +x $GOPATH/bin/dep
 
