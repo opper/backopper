@@ -16,9 +16,10 @@ jobs:
 
       - name: Get dependencies
         run: |
-          curl -L -s https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 -o $(dirname $GITHUB_WORKSPACE)/bin/dep
-          chmod +x $(dirname $GITHUB_WORKSPACE)/bin/dep
-          export PATH="$PATH:$(dirname $GITHUB_WORKSPACE)/bin/"
+          export DEP_PATH=$(dirname $GITHUB_WORKSPACE)/bin
+          curl -L -s https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 -o $DEP_PATH/dep
+          chmod +x $DEP_PATH/dep
+          export PATH="$PATH:$DEP_PATH"
 
       - name: Install dependencies
         run: dep ensure
