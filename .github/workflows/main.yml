@@ -25,6 +25,6 @@ jobs:
 
       - name: Build
         run: go build -v .
-  env:
-    DEP_PATH: ${{ dirname $GITHUB_WORKSPACE }}/bin
-    PATH: $PATH:$DEP_PATH
+    env:
+      DEP_PATH: ${{ dirname $GITHUB_WORKSPACE }}/bin
+      PATH: $PATH:$DEP_PATH
