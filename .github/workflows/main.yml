@@ -23,7 +23,7 @@ jobs:
           export PATH="$PATH:$DEP_PATH"
 
       - name: Install dependencies
-        run: dep ensure
+        run: $DEP_PATH/dep ensure
 
       - name: Build
         run: go build -v .
