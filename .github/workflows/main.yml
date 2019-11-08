@@ -1,5 +1,8 @@
 name: Build backopper
-on: [push]
+on:
+  push:
+    branches:
+      - feature/go-rewrite
 jobs:
 
   build:
