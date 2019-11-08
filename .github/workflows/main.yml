@@ -23,6 +23,11 @@ jobs:
       - name: Build
         run: go build -v .
 
+      - uses: actions-github/upx@master
+        with:
+          file: 'backopper'
+          upx_args: '-9'
+
       - name: Push to s3
         run: |
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
