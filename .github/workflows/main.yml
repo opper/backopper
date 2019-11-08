@@ -16,14 +16,15 @@ jobs:
 
       - name: Get dependencies
         run: |
-          export DEP_PATH=$(dirname $GITHUB_WORKSPACE)/bin
           mkdir -p $DEP_PATH
           curl -L -s https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 -o $DEP_PATH/dep
           chmod +x $DEP_PATH/dep
-          export PATH="$PATH:$DEP_PATH"
 
       - name: Install dependencies
         run: $DEP_PATH/dep ensure
 
       - name: Build
         run: go build -v .
+  env:
+    DEP_PATH: ${{ dirname $GITHUB_WORKSPACE }}/bin
+    PATH: $PATH:$DEP_PATH
