@@ -1,4 +1,4 @@
-name: Go
+name: Build backopper
 on: [push]
 jobs:
 
@@ -22,3 +22,12 @@ jobs:
 
       - name: Build
         run: go build -v .
+
+      - name: Push to s3
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region us-west-2
+          aws configure set output json
+
+          aws s3 cp backopper s3://${{ secrets.AWS_BUCKET }}/backopper
