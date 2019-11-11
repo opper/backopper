@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-    gocron.Every(1).Minute().Do(mainCronHandler)
+    gocron.Every(1).Day().At("23:00").Do(mainCronHandler)
 
     _, _ = gocron.NextRun()
 

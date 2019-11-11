@@ -46,7 +46,7 @@ func scheduleBackup(backup BackupResponse, scheduler *gocron.Scheduler) {
     switch backup.Frequency {
     case "daily":
         // TOOD: change this to actually daily freq as opposed to minute as it is now. only for testing purposes
-        job = job.Minute()
+        job = job.Day()
     case "hourly":
         job = job.Hour()
     }
