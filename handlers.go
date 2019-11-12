@@ -205,7 +205,8 @@ func doMediaServerSync(mediaLocation string, projectName string, fileName string
 
     fileInfo, _ := file.Stat()
 
-    err = scpClient.Copy(file, fmt.Sprintf(os.Getenv("MEDIA_BACKUPS_FOLDER"), projectName, fileName), "0644", fileInfo.Size())
+    path := fmt.Sprintf(os.Getenv("MEDIA_BACKUPS_FOLDER"), projectName, os.Getenv("ENVIRONMENT"), fileName)
+    err = scpClient.Copy(file, path, "0644", fileInfo.Size())
 
     if err != nil {
         fmt.Printf("failed to scp file to media server: %v\n", err)
