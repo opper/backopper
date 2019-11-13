@@ -59,7 +59,7 @@ func scheduleBackup(backup BackupResponse, scheduler *gocron.Scheduler) {
     case "weekly":
         job = job.Sunday()
     case "daily":
-        job = job.Minute()
+        job = job.Day()
     case "hourly":
         job = job.Hour()
     }
