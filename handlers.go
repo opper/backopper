@@ -21,7 +21,7 @@ func mainCronHandler() {
     url := fmt.Sprintf(os.Getenv("API_GET_URL"), os.Getenv("ENVIRONMENT"))
 
     var backups [] BackupResponse
-    request(url, "GET", &backups)
+    request(url, "GET", nil, &backups)
 
     scheduler := gocron.NewScheduler()
     singleProject, _ := strconv.ParseBool(os.Getenv("SINGLE_PROJECT"))
@@ -107,6 +107,8 @@ func doBackup(project BackupResponse) {
     if dumpDone {
         doS3Sync(backupFileName, projectName, dateTimeNow)
     }
+
+    notifyCloudAdmin(project.Id, true, true)
     cleanOldBackups(backupsFolder)
 
     fmt.Printf("Database backup for %s done\n", projectName)
