@@ -62,7 +62,7 @@ func doBackup(project BackupResponse) {
     err := godotenv.Overload(envFileLocation)
 
     if err != nil {
-        fmt.Printf("error loading .env for %s: %v", projectName, err)
+        fmt.Printf("error loading .env for %s: %v\n", projectName, err)
         return
     }
 
