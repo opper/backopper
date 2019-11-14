@@ -48,7 +48,7 @@ func mainCronHandler() {
 
 func doBackup(project BackupResponse) {
     projectName := project.Name
-    fmt.Println(fmt.Sprintf("Starting database backup for %s", projectName))
+    fmt.Printf("Starting database backup for %s\n", projectName)
 
     envFileLocation := ""
     singleProject, _ := strconv.ParseBool(os.Getenv("SINGLE_PROJECT"))
