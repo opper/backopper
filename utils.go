@@ -1,6 +1,7 @@
 package main
 
 import (
+    "bytes"
     "encoding/json"
     "fmt"
     "github.com/aws/aws-sdk-go/aws"
@@ -15,14 +16,25 @@ import (
     "os"
     "path/filepath"
     "sort"
+    "time"
 )
 
-func request(url string, method string, returnValue Response) {
+func request(url string, method string, content interface{}, returnValue Response) {
     client := http.Client{}
-    request, err := http.NewRequest(method, url, nil)
+
+    var requestBody []byte = nil
+    if content != nil {
+        requestBody, _ = json.Marshal(content)
+    }
+
+    request, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
 
     if err != nil {
         fmt.Printf("error: %v\n", err)
+    }
+
+    if method == "POST" {
+        request.Header.Set("Content-Type", "application/json")
     }
 
     // super secret authentication for the cloud admin :)
@@ -44,8 +56,9 @@ func scheduleBackup(backup BackupResponse, scheduler *gocron.Scheduler) {
     job := scheduler.Every(1)
 
     switch backup.Frequency {
+    case "weekly":
+        job = job.Sunday()
     case "daily":
-        // TOOD: change this to actually daily freq as opposed to minute as it is now. only for testing purposes
         job = job.Day()
     case "hourly":
         job = job.Hour()
@@ -105,4 +118,21 @@ func cleanOldBackups(backupsLocation string) {
     for _, file := range toDeleteFiles {
         _ = os.Remove(fmt.Sprintf("%s/%s", backupsLocation, file.Name()))
     }
+}
+
+func notifyCloudAdmin(projectId string, databaseDumpDone bool, s3syncDone bool) {
+    url := fmt.Sprintf(os.Getenv("API_POST_URL"), projectId)
+
+    status := "failure"
+    if databaseDumpDone {
+        status = "success"
+    }
+
+    requestBody := NotifyCloudAdmin{
+        ExecTime: time.Now().Unix(),
+        Status:   status,
+        S3Synced: s3syncDone,
+    }
+
+    request(url, "POST", requestBody, nil)
 }
