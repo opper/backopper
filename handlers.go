@@ -105,7 +105,7 @@ func doBackup(project BackupResponse) {
     }
 
     if dumpDone {
-        doS3Sync(backupFileName, projectName, dateTimeNow)
+        doS3Sync(backupFileName, project, dateTimeNow)
     }
 
     notifyCloudAdmin(project.Id, true, true)
@@ -115,14 +115,19 @@ func doBackup(project BackupResponse) {
     doMediaBackup(projectName)
 }
 
-func doS3Sync(backupFile string, projectName string, dateTimeNow string) {
-    fmt.Printf("Starting s3 sync for %s\n", projectName)
+func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) {
+    fmt.Printf("Starting s3 sync for %s\n", project.Name)
     s3Client := awsClient()
 
     file, _ := os.Open(backupFile)
     defer file.Close()
 
-    fileKey := fmt.Sprintf("%s/%s/backup_%s.sql.gz", projectName, os.Getenv("ENVIRONMENT"), dateTimeNow)
+    fileKeyFormat := "%s/%s/backup_%s.sql.gz"
+    if project.DBEngine == "postgresql" {
+        fileKeyFormat = "%s/%s/backup_%s.tar"
+    }
+
+    fileKey := fmt.Sprintf(fileKeyFormat, project.Name, os.Getenv("ENVIRONMENT"), dateTimeNow)
 
     fileInfo, _ := file.Stat()
     size := fileInfo.Size()
@@ -136,7 +141,7 @@ func doS3Sync(backupFile string, projectName string, dateTimeNow string) {
         ContentLength: aws.Int64(size),
         Key:           aws.String(fileKey),
     })
-    fmt.Printf("S3 sync finished for %s\n", projectName)
+    fmt.Printf("S3 sync finished for %s\n", project.Name)
 }
 
 func doMediaBackup(projectName string) {
