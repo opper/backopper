@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -e bash
 
 BUCKET=$1
 
