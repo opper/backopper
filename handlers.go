@@ -40,7 +40,10 @@ func mainCronHandler() {
 
     // this shouldn't cause any issues with in-progress dumps that haven't been scp'd to the media server
     // shouldn't
-    cleanTmpFolder()
+    shouldDoBackup, _ := strconv.ParseBool(os.Getenv("DO_MEDIA_BACKUP"))
+    if shouldDoBackup {
+        cleanTmpFolder()
+    }
 
     _, _ = scheduler.NextRun()
     <-scheduler.Start()
@@ -112,7 +115,10 @@ func doBackup(project BackupResponse) {
     cleanOldBackups(backupsFolder)
 
     fmt.Printf("Database backup for %s done\n", projectName)
-    doMediaBackup(projectName)
+    shouldDoBackup, _ := strconv.ParseBool(os.Getenv("DO_MEDIA_BACKUP"))
+    if shouldDoBackup {
+        doMediaBackup(projectName)
+    }
 }
 
 func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) {

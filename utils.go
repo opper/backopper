@@ -113,7 +113,11 @@ func cleanOldBackups(backupsLocation string) {
         return oldFiles[i].ModTime().After(oldFiles[j].ModTime())
     })
 
-    toDeleteFiles := oldFiles[5:]
+    toDeleteFiles := oldFiles
+
+    if len(oldFiles) > 5 {
+        toDeleteFiles = oldFiles[5:]
+    }
 
     for _, file := range toDeleteFiles {
         _ = os.Remove(fmt.Sprintf("%s/%s", backupsLocation, file.Name()))
