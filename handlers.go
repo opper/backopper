@@ -26,15 +26,9 @@ func mainCronHandler() {
     scheduler := gocron.NewScheduler()
     singleProject, _ := strconv.ParseBool(os.Getenv("SINGLE_PROJECT"))
 
-    if singleProject == false {
-        for _, backup := range backups {
+    for _, backup := range backups {
+        if backup.Name == os.Getenv("PROJECT_NAME") || singleProject == false {
             scheduleBackup(backup, scheduler)
-        }
-    } else {
-        for _, backup := range backups {
-            if backup.Name == os.Getenv("PROJECT_NAME") {
-                scheduleBackup(backup, scheduler)
-            }
         }
     }
 
@@ -117,7 +111,7 @@ func doBackup(project BackupResponse) {
     fmt.Printf("Database backup for %s done\n", projectName)
     shouldDoBackup, _ := strconv.ParseBool(os.Getenv("DO_MEDIA_BACKUP"))
     if shouldDoBackup {
-        doMediaBackup(projectName)
+        doMediaBackup(project)
     }
 }
 
@@ -150,7 +144,8 @@ func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) {
     fmt.Printf("S3 sync finished for %s\n", project.Name)
 }
 
-func doMediaBackup(projectName string) {
+func doMediaBackup(project BackupResponse) {
+    projectName := project.Name
     fmt.Printf("Starting media backup for %s\n", projectName)
     dateTimeNow := time.Now().Format("20060102150405")
     hash := md5.New()
@@ -170,15 +165,18 @@ func doMediaBackup(projectName string) {
         mediaFolder = fmt.Sprintf(os.Getenv("MEDIA_FOLDER_LOCATION"), projectName)
     }
 
-    // for now only handles wp-style media folders (meaning that mediaFolder is likely something like
-    // /var/www/proj/wp-content/uploads. should probs make it handle laravel's uploads also in the future.
+    toBackupFolder := "uploads"
+    if project.ProjectType == "laravel" {
+        toBackupFolder = "public"
+    }
+
     command := exec.Command(
         "tar",
         "-czf",
         tempMediaLocation,
         "-C",
         mediaFolder,
-        "uploads",
+        toBackupFolder,
     )
 
     err := command.Run()

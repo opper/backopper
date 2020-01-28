@@ -8,6 +8,7 @@ type BackupResponse struct {
     Name string
     Frequency string
     DBEngine string `json:"db_engine"`
+    ProjectType string `json:"project_type"`
     Id string
 }
 
