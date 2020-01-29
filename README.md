@@ -55,11 +55,9 @@ the best solution without overengineering everything.
 `$PROJECT_NAME/$ENVIRONMENT/backup_$TIMESTAMP.sql.gz` if it's a MySQL dump or 
 `$PROJECT_NAME/$ENVIRONMENT/backup_$TIMESTAMP.tar` if it's a PostgreSQL dump.
 - Regardless if the database dump is successful or not, it will attempt to create a media backup (generally things like
-pictures that users upload, documents, etc). It is quite straightforward in the sense that it will simply run a command
-like so: `tar -czf $TEMPORARY_MEDIA_LOCATION -C $MEDIA_FOLDER $FOLDER_TO_BACK_UP`. A temporary location is used because
+pictures that users upload, documents, etc). It is quite straightforward in the sense that it will simply run tar in the following format: `tar -czf $TEMPORARY_MEDIA_LOCATION -C $MEDIA_FOLDER $FOLDER_TO_BACK_UP`. A temporary location is used because
 the media backup can be quite heavy and it is not stored on the server itself (more on that later). The `-C` flag is used
 to change the directory location to wherever the media folder is located, but not the actual folder to back up itself, 
 that is `$FOLDER_TO_BACK_UP`. It is a bit complex in the sense that it changes dirs to the parent folder to back up and 
 then it performs the tar command but this is the most reliable way I could find of making it work.
-- If the media dump is successful, it is then sent via `scp` to the media server. It essentially runs a command like this:
-`scp -P$PORT $TEMPORARY_MEDIA_LOCATION $USER@$HOST:$MEDIA_BACKUPS_PATH`.
+- If the media dump is successful, it is then sent via `scp` to the media server. A command like the following will be executed: `scp -P$PORT $TEMPORARY_MEDIA_LOCATION $USER@$HOST:$MEDIA_BACKUPS_PATH`.
