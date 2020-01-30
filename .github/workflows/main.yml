@@ -2,7 +2,7 @@ name: Build backopper
 on:
   push:
     branches:
-      - feature/go-rewrite
+      - master
 jobs:
 
   build:
