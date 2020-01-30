@@ -1,0 +1,41 @@
+name: Build backopper
+on:
+  push:
+    branches:
+      - feature/go-rewrite
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+
+      - name: Build
+        run: go build -v .
+
+      - uses: actions-github/upx@master
+        with:
+          file: 'backopper'
+          upx_args: '-9'
+
+      - name: Push to s3
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region eu-central-1
+          aws configure set output json
+
+          aws s3 cp backopper s3://${{ secrets.AWS_BUCKET }}/backopper

@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env -e bash
 
-cd $1
-source venv/bin/activate
+BUCKET=$1
 
-git pull
-pip install backopper --upgrade --force-reinstall
+systemctl stop backopper
+aws s3 cp s3://$BUCKET/backopper /usr/local/bin/backopper
+chmod +x /usr/local/bin/backopper
+systemctl start backopper

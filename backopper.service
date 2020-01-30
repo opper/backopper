@@ -1,0 +1,14 @@
+[Unit]
+Description=Start backopper service
+After=network.target
+
+[Service]
+EnvironmentFile=/root/backopper.env
+User=root
+Group=root
+ExecStart=/usr/local/bin/backopper
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
