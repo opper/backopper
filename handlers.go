@@ -135,13 +135,19 @@ func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) {
 
     _, _ = file.Read(buffer)
 
-    _, _ = s3Client.PutObject(&s3.PutObjectInput{
+    _, err := s3Client.PutObject(&s3.PutObjectInput{
         Bucket:        aws.String(os.Getenv("AWS_BUCKET_NAME")),
         Body:          bytes.NewReader(buffer),
         ContentLength: aws.Int64(size),
         Key:           aws.String(fileKey),
     })
-    fmt.Printf("S3 sync finished for %s\n", project.Name)
+
+    if err != nil {
+        fmt.Printf("There was an error when syncing to s3: %v\n", err)
+    } else {
+        fmt.Printf("S3 sync finished for %s\n", project.Name)
+    }
+
 }
 
 func doMediaBackup(project BackupResponse) {
