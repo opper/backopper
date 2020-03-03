@@ -101,11 +101,12 @@ func doBackup(project BackupResponse) {
         fmt.Printf("failed executing db dump for %s: %v-%v\n", projectName, err, comm.Stderr)
     }
 
+    s3Synced := false
     if dumpDone {
-        doS3Sync(backupFileName, project, dateTimeNow)
+        s3Synced = doS3Sync(backupFileName, project, dateTimeNow)
     }
 
-    notifyCloudAdmin(project.Id, true, true)
+    notifyCloudAdmin(project.Id, dumpDone, s3Synced)
     cleanOldBackups(backupsFolder)
 
     fmt.Printf("Database backup for %s done\n", projectName)
@@ -115,7 +116,7 @@ func doBackup(project BackupResponse) {
     }
 }
 
-func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) {
+func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) bool {
     fmt.Printf("Starting s3 sync for %s\n", project.Name)
     s3Client := awsClient()
 
@@ -144,10 +145,13 @@ func doS3Sync(backupFile string, project BackupResponse, dateTimeNow string) {
 
     if err != nil {
         fmt.Printf("There was an error when syncing to s3: %v\n", err)
-    } else {
-        fmt.Printf("S3 sync finished for %s\n", project.Name)
+
+        return false
     }
 
+    fmt.Printf("S3 sync finished for %s\n", project.Name)
+
+    return true
 }
 
 func doMediaBackup(project BackupResponse) {
