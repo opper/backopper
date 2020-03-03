@@ -55,13 +55,18 @@ func request(url string, method string, content interface{}, returnValue Respons
 func scheduleBackup(backup BackupResponse, scheduler *gocron.Scheduler) {
     job := scheduler.Every(1)
 
-    switch backup.Frequency {
-    case "weekly":
-        job = job.Sunday()
-    case "daily":
-        job = job.Day()
-    case "hourly":
-        job = job.Hour()
+    // todo: should probably figure out a better way of doing this perhaps
+    if DEBUG {
+        job = job.Minute()
+    } else {
+        switch backup.Frequency {
+        case "weekly":
+            job = job.Sunday()
+        case "daily":
+            job = job.Day()
+        case "hourly":
+            job = job.Hour()
+        }
     }
 
     job.Do(doBackup, backup)
